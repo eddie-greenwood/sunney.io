@@ -27,30 +27,52 @@ app.use('*', cors({
 app.use('/api/*', async (c, next) => {
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.json({ error: 'Unauthorized' }, 401);
+    return c.json({ error: 'Unauthorized - no token provided' }, 401);
   }
   
   const token = authHeader.substring(7);
   
-  // Verify token with auth worker
-  const authResponse = await c.env.AUTH_WORKER.fetch(
-    new Request('https://auth/verify', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-  );
-  
-  if (!authResponse.ok) {
-    return c.json({ error: 'Invalid token' }, 401);
+  try {
+    // Verify token with auth worker via service binding
+    const authResponse = await c.env.AUTH_WORKER.fetch(
+      new Request('http://auth-worker/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+          // No body or Content-Type needed for verification
+        }
+      })
+    );
+    
+    if (!authResponse.ok) {
+      const errorText = await authResponse.text();
+      console.error('Auth verification failed:', authResponse.status, errorText);
+      return c.json({
+        error: 'Invalid token',
+        status: authResponse.status,
+        details: errorText
+      }, 401);
+    }
+    
+    const authData = await authResponse.json() as any;
+    
+    // Check if the token is valid
+    if (!authData.valid) {
+      console.error('Token not valid:', authData);
+      return c.json({ error: 'Invalid token - verification failed' }, 401);
+    }
+    
+    c.set('userId', authData.userId);
+    c.set('email', authData.email);
+    
+    await next();
+  } catch (error: any) {
+    console.error('Auth middleware error:', error);
+    return c.json({ 
+      error: 'Authentication error',
+      details: error.message
+    }, 500);
   }
-  
-  const authData = await authResponse.json();
-  c.set('userId', authData.userId);
-  c.set('email', authData.email);
-  
-  await next();
 });
 
 // Health check (no auth required)

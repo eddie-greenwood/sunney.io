@@ -10,13 +10,19 @@ export interface Env {
   SESSIONS: KVNamespace;
   JWT_SECRET: string;
   JWT_CACHE?: KVNamespace; // Optional for backward compatibility
+  [key: string]: any;
 }
 
 const app = new Hono<{ Bindings: Env }>();
 
 // CORS configuration
 app.use('*', cors({
-  origin: ['https://sunney.io', 'http://localhost:3000'],
+  origin: [
+    'https://sunney.io', 
+    'http://localhost:3000',
+    'https://sunney-api.eddie-37d.workers.dev',
+    'https://sunney-io.pages.dev'
+  ],
   credentials: true
 }));
 
@@ -44,6 +50,12 @@ app.get('/health', (c) => {
 // Register endpoint
 app.post('/auth/register', async (c) => {
   try {
+    // Check if JWT_SECRET exists
+    if (!c.env.JWT_SECRET) {
+      console.error('JWT_SECRET not found in environment');
+      return c.json({ error: 'Server configuration error: JWT_SECRET missing' }, 500);
+    }
+    
     const body = await c.req.json();
     const data = RegisterSchema.parse(body);
     
@@ -64,12 +76,17 @@ app.post('/auth/register', async (c) => {
       'INSERT INTO users (email, password_hash, name, created_at) VALUES (?, ?, ?, datetime("now")) RETURNING id'
     ).bind(data.email, passwordHash, data.name).first();
     
+    if (!result || !result.id) {
+      throw new Error('Failed to create user - no ID returned');
+    }
+    
     // Generate JWT
-    const token = await generateJWT(result.id as string, data.email, c.env.JWT_SECRET);
+    const userId = String(result.id);
+    const token = await generateJWT(userId, data.email, c.env.JWT_SECRET);
     
     // Store session
-    await c.env.SESSIONS.put(`session:${result.id}`, JSON.stringify({
-      userId: result.id,
+    await c.env.SESSIONS.put(`session:${userId}`, JSON.stringify({
+      userId: userId,
       email: data.email,
       createdAt: new Date().toISOString()
     }), { expirationTtl: 86400 }); // 24 hours
@@ -82,9 +99,13 @@ app.post('/auth/register', async (c) => {
         name: data.name
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Register error:', error);
-    return c.json({ error: 'Registration failed' }, 500);
+    console.error('Error stack:', error.stack);
+    return c.json({ 
+      error: 'Registration failed',
+      details: error.message || 'Unknown error'
+    }, 500);
   }
 });
 
@@ -201,7 +222,7 @@ app.post('/auth/logout', async (c) => {
   return c.json({ success: true });
 });
 
-// JWT utilities
+// JWT utilities - simplified for Workers environment
 async function generateJWT(userId: string, email: string, secret: string): Promise<string> {
   const header = {
     alg: 'HS256',
@@ -215,11 +236,19 @@ async function generateJWT(userId: string, email: string, secret: string): Promi
     iat: Math.floor(Date.now() / 1000)
   };
   
-  const encoder = new TextEncoder();
-  const data = encoder.encode(
-    base64url(JSON.stringify(header)) + '.' + base64url(JSON.stringify(payload))
-  );
+  const encodedHeader = btoa(JSON.stringify(header))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+    
+  const encodedPayload = btoa(JSON.stringify(payload))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
   
+  const data = `${encodedHeader}.${encodedPayload}`;
+  
+  const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
     encoder.encode(secret),
@@ -228,17 +257,25 @@ async function generateJWT(userId: string, email: string, secret: string): Promi
     ['sign']
   );
   
-  const signature = await crypto.subtle.sign('HMAC', key, data);
-  const sig = base64url(String.fromCharCode(...new Uint8Array(signature)));
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(data)
+  );
   
-  return `${base64url(JSON.stringify(header))}.${base64url(JSON.stringify(payload))}.${sig}`;
+  const encodedSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=/g, '');
+  
+  return `${data}.${encodedSignature}`;
 }
 
 async function verifyJWT(token: string, secret: string): Promise<any> {
   const [header, payload, signature] = token.split('.');
   
   const encoder = new TextEncoder();
-  const data = encoder.encode(header + '.' + payload);
+  const data = encoder.encode(`${header}.${payload}`);
   
   const key = await crypto.subtle.importKey(
     'raw',
@@ -248,18 +285,28 @@ async function verifyJWT(token: string, secret: string): Promise<any> {
     ['verify']
   );
   
-  const sig = Uint8Array.from(atob(signature.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
-  const valid = await crypto.subtle.verify('HMAC', key, sig, data);
+  // Decode signature from base64url
+  const normalizedSig = signature
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const padding = (4 - normalizedSig.length % 4) % 4;
+  const paddedSig = normalizedSig + '='.repeat(padding);
+  const sigBytes = Uint8Array.from(atob(paddedSig), c => c.charCodeAt(0));
+  
+  const valid = await crypto.subtle.verify('HMAC', key, sigBytes, data);
   
   if (!valid) {
     throw new Error('Invalid token');
   }
   
-  return JSON.parse(atob(payload));
-}
-
-function base64url(str: string): string {
-  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+  // Decode payload
+  const normalizedPayload = payload
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+  const payloadPadding = (4 - normalizedPayload.length % 4) % 4;
+  const paddedPayload = normalizedPayload + '='.repeat(payloadPadding);
+  
+  return JSON.parse(atob(paddedPayload));
 }
 
 export default app;

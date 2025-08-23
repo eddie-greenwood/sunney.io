@@ -8,10 +8,16 @@ export class JWTCache {
   }
 
   async get(token: string): Promise<any | null> {
-    const key = this.hashToken(token);
-    const cached = await this.cache.get(key, 'json');
-    
-    if (cached) {
+    try {
+      const key = this.hashToken(token);
+      const cachedString = await this.cache.get(key);
+      
+      if (!cachedString) {
+        return null;
+      }
+      
+      const cached = JSON.parse(cachedString);
+      
       // Check if still valid
       const now = Date.now();
       if (cached.expires > now) {
@@ -19,6 +25,8 @@ export class JWTCache {
       }
       // Expired, delete it
       await this.cache.delete(key);
+    } catch (error) {
+      console.error('JWT cache get error:', error);
     }
     
     return null;
@@ -37,16 +45,23 @@ export class JWTCache {
   }
 
   async invalidate(userId: string): Promise<void> {
-    // Invalidate all tokens for a user (on logout)
-    // In production, maintain a list of token keys per user
-    const userKey = `user:${userId}:tokens`;
-    const tokenList = await this.cache.get(userKey, 'json') || [];
-    
-    await Promise.all(
-      tokenList.map(tokenKey => this.cache.delete(tokenKey))
-    );
-    
-    await this.cache.delete(userKey);
+    try {
+      // Invalidate all tokens for a user (on logout)
+      // In production, maintain a list of token keys per user
+      const userKey = `user:${userId}:tokens`;
+      const tokenListString = await this.cache.get(userKey);
+      
+      if (tokenListString) {
+        const tokenList = JSON.parse(tokenListString);
+        await Promise.all(
+          tokenList.map((tokenKey: string) => this.cache.delete(tokenKey))
+        );
+      }
+      
+      await this.cache.delete(userKey);
+    } catch (error) {
+      console.error('JWT cache invalidate error:', error);
+    }
   }
 
   private hashToken(token: string): string {
