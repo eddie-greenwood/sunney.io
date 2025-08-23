@@ -1,0 +1,28 @@
+name = "sunney-auth"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Database for user accounts
+[[d1_databases]]
+binding = "DB"
+database_name = "sunney-auth"
+database_id = "5beb2eb2-74a1-430c-a83c-33f0d75eaf79"
+
+# KV for session storage
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "c6ce47dfadde45a6a5e7c6571e4a162d"
+
+# KV for JWT cache (optional)
+[[kv_namespaces]]
+binding = "JWT_CACHE"
+id = "436d08ae0da948e6bb930a09811b1c09"
+
+# Environment variables
+# JWT_SECRET is set as a secret, not in vars
+
+# Custom domains (will be set up after deployment)
+# routes = [
+#   { pattern = "auth.sunney.io/*", custom_domain = true }
+# ]

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunney.io - Professional Energy Trading Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00E87E;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .user-name {
+            color: #00E87E;
+            font-weight: 500;
+        }
+        
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            border: 1px solid #ff4444;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #ff4444;
+            color: white;
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: 60px 40px;
+            text-align: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #00E87E, #4ECDC4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+            color: #b0b0b0;
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto 60px;
+            padding: 0 40px;
+        }
+        
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00E87E;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #888;
+            font-size: 0.9rem;
+        }
+        
+        /* Apps Grid */
+        .apps-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #00E87E;
+        }
+        
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+        
+        .app-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            transition: all 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .app-card:hover {
+            transform: translateY(-5px);
+            border-color: #00E87E;
+            box-shadow: 0 10px 30px rgba(0, 232, 126, 0.2);
+        }
+        
+        .app-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .app-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: white;
+        }
+        
+        .app-description {
+            color: #b0b0b0;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .app-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(0, 232, 126, 0.2);
+            color: #00E87E;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 40px;
+            margin-top: 80px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+        
+        .footer a {
+            color: #00E87E;
+            text-decoration: none;
+        }
+        
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 232, 126, 0.2);
+            border-top-color: #00E87E;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                padding: 15px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">⚡ Sunney.io</div>
+        <div class="user-menu">
+            <span class="user-name"></span>
+            <button class="logout-btn">Logout</button>
+        </div>
+    </header>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Energy Trading Command Center</h1>
+        <p>Professional tools for the Australian National Electricity Market</p>
+    </section>
+    
+    <!-- Live Stats -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-value" id="avgPrice">-</div>
+            <div class="stat-label">Avg Price ($/MWh)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="totalDemand">-</div>
+            <div class="stat-label">Total Demand (MW)</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="renewable">-</div>
+            <div class="stat-label">Renewable %</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="lastUpdate">-</div>
+            <div class="stat-label">Last Update</div>
+        </div>
+    </div>
+    
+    <!-- Dashboards Section -->
+    <section class="apps-section">
+        <h2 class="section-title">📊 Live Dashboards</h2>
+        <div class="apps-grid">
+            <a href="/dashboards/nem-live/" class="app-card">
+                <div class="app-icon">📈</div>
+                <div class="app-title">NEM Live</div>
+                <div class="app-description">
+                    Real-time market prices and demand across all NEM regions with interactive charts
+                </div>
+                <span class="app-badge">LIVE DATA</span>
+            </a>
+            
+            <a href="/dashboards/nem-refined/" class="app-card">
+                <div class="app-icon">📊</div>
+                <div class="app-title">NEM Refined</div>
+                <div class="app-description">
+                    Enhanced visualization with advanced analytics and historical comparisons
+                </div>
+                <span class="app-badge">ADVANCED</span>
+            </a>
+            
+            <a href="/dashboards/aemo-full/" class="app-card">
+                <div class="app-icon">🎯</div>
+                <div class="app-title">AEMO Full Dashboard</div>
+                <div class="app-description">
+                    Comprehensive market overview including FCAS, interconnectors, and constraints
+                </div>
+                <span class="app-badge">PROFESSIONAL</span>
+            </a>
+        </div>
+    </section>
+    
+    <!-- Trading Tools Section -->
+    <section class="apps-section">
+        <h2 class="section-title">💼 Trading Tools</h2>
+        <div class="apps-grid">
+            <a href="/apps/trading/" class="app-card">
+                <div class="app-icon">🎮</div>
+                <div class="app-title">Trading Simulator</div>
+                <div class="app-description">
+                    Practice energy trading strategies with real market data in a risk-free environment
+                </div>
+                <span class="app-badge">TRAINING</span>
+            </a>
+            
+            <a href="/apps/bess-optimizer/" class="app-card">
+                <div class="app-icon">🔋</div>
+                <div class="app-title">BESS Optimizer</div>
+                <div class="app-description">
+                    Optimize battery storage operations for maximum revenue across energy and FCAS markets
+                </div>
+                <span class="app-badge">OPTIMIZATION</span>
+            </a>
+            
+            <a href="/apps/forward-lite/" class="app-card">
+                <div class="app-icon">📅</div>
+                <div class="app-title">Forward Lite</div>
+                <div class="app-description">
+                    Financial modeling tool for forward price analysis and contract valuation
+                </div>
+                <span class="app-badge">FORECASTING</span>
+            </a>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <p>© 2024 Sunney.io | Professional Energy Trading Platform</p>
+        <p>Data sourced from <a href="https://aemo.com.au" target="_blank">AEMO</a> | 
+           <a href="/docs">Documentation</a> | 
+           <a href="/api">API</a></p>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="/assets/js/auth.js"></script>
+    <script src="/assets/js/api-client.js"></script>
+    <script>
+        // Check authentication
+        if (!window.sunneyAuth.requireAuth()) {
+            // Will redirect to login if not authenticated
+        }
+        
+        // Display user info
+        window.sunneyAuth.displayUser();
+        
+        // Load live stats
+        async function loadStats() {
+            try {
+                const data = await window.sunneyAPI.getLatestPrices();
+                
+                if (data && data.regions) {
+                    // Calculate average price
+                    const avgPrice = data.regions.reduce((sum, r) => sum + r.price, 0) / data.regions.length;
+                    document.getElementById('avgPrice').textContent = `$${avgPrice.toFixed(2)}`;
+                    
+                    // Calculate total demand
+                    const totalDemand = data.regions.reduce((sum, r) => sum + r.demand, 0);
+                    document.getElementById('totalDemand').textContent = 
+                        `${(totalDemand / 1000).toFixed(1)} GW`;
+                    
+                    // Mock renewable percentage (would come from real data)
+                    document.getElementById('renewable').textContent = '42%';
+                    
+                    // Last update time
+                    const updateTime = new Date(data.timestamp).toLocaleTimeString('en-AU', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    document.getElementById('lastUpdate').textContent = updateTime;
+                }
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+        
+        // Load stats on page load
+        loadStats();
+        
+        // Refresh stats every minute
+        setInterval(loadStats, 60000);
+        
+        // Logout handler
+        document.querySelector('.logout-btn').addEventListener('click', () => {
+            window.sunneyAuth.logout();
+        });
+    </script>
+</body>
+</html>

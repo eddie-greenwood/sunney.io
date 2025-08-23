@@ -1,0 +1,1913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="Lé Tool - Advanced BESS Opportunity Dashboard powered by Greenwood Energy">
+    <meta name="author" content="Greenwood Energy">
+    <link rel="icon" type="image/svg+xml" href="Greenwodo Icon.svg">
+    <link rel="apple-touch-icon" href="Greenwodo Icon.svg">
+    <link rel="mask-icon" href="Greenwodo Icon.svg" color="#00E87E">
+    <title>Lé Tool - BESS Opportunity Dashboard | Greenwood Energy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.29.3/index.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* Greenwood Energy Brand Colors */
+            --greenwood-primary: #00E87E;
+            --greenwood-dark: #000000;
+            --greenwood-light: #00FF8C;
+            --greenwood-accent: #00C96A;
+            --dark-bg: #0a0a0a;
+            --card-bg: #141414;
+            --card-border: #1a1a1a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --white: #FFFFFF;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 232, 126, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(0, 232, 126, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .dashboard {
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+            position: relative;
+        }
+        .brand-row {
+            position: relative;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .brand-left {
+            justify-self: start;
+        }
+        .brand-right {
+            justify-self: end;
+        }
+        
+        /* AEMO Dashboard Links Container */
+        .aemo-dashboard-links {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        /* AEMO Dashboard Link */
+        .aemo-dashboard-link {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #00E87E, #00C96A);
+            color: #000;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 232, 126, 0.3);
+        }
+        
+        .aemo-dashboard-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 232, 126, 0.5);
+            background: linear-gradient(135deg, #00FF8C, #00E87E);
+        }
+        
+        .aemo-dashboard-link svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        @media (max-width: 768px) {
+            .aemo-dashboard-links {
+                top: 10px;
+                right: 10px;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .aemo-dashboard-link {
+                padding: 8px 15px;
+                font-size: 0.8rem;
+            }
+            .aemo-dashboard-link svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+
+        .logo-container {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr; /* center divider column */
+            align-items: center;
+            column-gap: 16px;
+            justify-items: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            height: 50px;
+            filter: drop-shadow(0 4px 6px rgba(0, 232, 126, 0.3));
+            display: block;
+        }
+
+        .logo-left { justify-self: end; }
+        .logo-right { justify-self: start; }
+
+        /* Specific logo sizing/treatments */
+        .logo-letool {
+            height: 82px;
+            filter: drop-shadow(0 6px 12px rgba(0, 232, 126, 0.35));
+        }
+        .logo-greenwood-wordmark {
+            height: 88px;
+            filter: drop-shadow(0 4px 10px rgba(0, 232, 126, 0.25));
+            transform: translateY(2px);
+        }
+
+        .brand-divider {
+            width: 2px;
+            height: 84px;
+            background: linear-gradient(to bottom, transparent, var(--greenwood-primary), transparent);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--greenwood-primary) 0%, var(--greenwood-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 232, 126, 0.5);
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            color: var(--greenwood-primary);
+            opacity: 0.95;
+            margin-bottom: 5px;
+        }
+
+        .header .powered-by {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 10px;
+        }
+
+        .controls {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+            animation: fadeInUp 0.8s ease 0.2s both;
+            border: 1px solid var(--card-border);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+        }
+
+        .control-section h3 {
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-bottom: 2px solid var(--greenwood-primary);
+            padding-bottom: 8px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-btn {
+            background: var(--greenwood-primary);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .info-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 232, 126, 0.5);
+        }
+
+        .help-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 16px;
+            font-size: 11px;
+            font-weight: normal;
+            cursor: help;
+            margin-left: 5px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .help-icon:hover {
+            background: rgba(0, 232, 126, 0.15);
+            color: rgba(0, 232, 126, 0.8);
+        }
+
+        .help-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 25, 35, 0.98);
+            color: #ffffff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--greenwood-primary);
+            font-size: 12px;
+            font-weight: normal;
+            line-height: 1.4;
+            width: 250px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.8);
+            white-space: normal;
+            text-align: left;
+            backdrop-filter: blur(10px);
+        }
+
+        .help-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: var(--greenwood-primary);
+            z-index: 1001;
+        }
+
+        label {
+            position: relative;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1f2e 0%, #2d3748 100%);
+            margin: 50px auto;
+            padding: 40px;
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--greenwood-primary);
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--greenwood-primary);
+            font-weight: 600;
+        }
+
+        .close-btn {
+            color: var(--text-secondary);
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: var(--greenwood-primary);
+        }
+
+        .modal-body {
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+
+        .modal-body h4 {
+            color: var(--greenwood-primary);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .modal-body p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .modal-body ul {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        .modal-body li {
+            margin-bottom: 10px;
+        }
+
+        .methodology-box {
+            background: rgba(0, 232, 126, 0.05);
+            border: 1px solid var(--greenwood-primary);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .control-row {
+            display: flex;
+            gap: 20px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--card-border);
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background: #1a1a1a;
+            color: var(--text-primary);
+        }
+
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--greenwood-primary);
+            box-shadow: 0 0 0 3px rgba(0, 232, 126, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--greenwood-primary) 0%, var(--greenwood-accent) 100%);
+            color: var(--greenwood-dark);
+            border: none;
+            padding: 12px 40px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            height: 44px;
+            box-shadow: 0 4px 20px rgba(0, 232, 126, 0.4);
+            text-transform: none;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(0, 232, 126, 0.4);
+            background: linear-gradient(135deg, var(--greenwood-light) 0%, var(--greenwood-primary) 100%);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #333333 0%, #555555 100%);
+            color: var(--greenwood-primary);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #444444 0%, #666666 100%);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: fadeInUp 0.8s ease both;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 232, 126, 0.15);
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--greenwood-primary), var(--greenwood-light));
+        }
+
+        .metric-card.highlight {
+            transform: scale(1.02);
+            border-color: var(--greenwood-primary);
+        }
+
+        .metric-card.highlight::before {
+            height: 6px;
+            background: linear-gradient(90deg, var(--greenwood-light), var(--greenwood-primary), var(--greenwood-light));
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            font-weight: 600;
+            line-height: 1.2;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .metric-value.money {
+            background: linear-gradient(135deg, var(--greenwood-primary), var(--greenwood-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-value.positive {
+            color: var(--greenwood-accent);
+            text-shadow: 0 0 10px rgba(0, 232, 126, 0.3);
+        }
+
+        .metric-unit {
+            color: #999;
+            font-size: 0.85rem;
+        }
+
+        .chart-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: fadeInUp 0.8s ease 0.4s both;
+            border: 1px solid var(--card-border);
+        }
+
+        .chart-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .chart-wrapper.small {
+            height: 250px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: var(--greenwood-primary);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid rgba(0, 232, 126, 0.1);
+            border-top: 3px solid var(--greenwood-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c00;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .info {
+            background: linear-gradient(135deg, rgba(0, 232, 126, 0.05), rgba(0, 232, 126, 0.1));
+            border: 2px solid var(--greenwood-primary);
+            color: var(--text-primary);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 5px 20px rgba(0, 232, 126, 0.15);
+        }
+
+        .info strong {
+            color: var(--greenwood-primary);
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .legend-color:not([style*="border:"]) {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .results-table {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow-x: auto;
+            border: 1px solid var(--card-border);
+        }
+
+        .results-table h3 {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--greenwood-primary) 0%, var(--greenwood-accent) 100%);
+            color: var(--greenwood-dark);
+            padding: 12px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--card-border);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        tr:hover {
+            background: rgba(0, 232, 126, 0.03);
+        }
+
+        .total-row {
+            font-weight: bold;
+            background: linear-gradient(135deg, rgba(0, 232, 126, 0.05), rgba(0, 232, 126, 0.1));
+        }
+
+        .total-row td {
+            border-top: 2px solid var(--greenwood-primary);
+            padding-top: 15px;
+            color: var(--text-primary);
+        }
+
+        /* ========== COMPREHENSIVE MOBILE OPTIMIZATIONS ========== */
+        
+        /* Prevent iOS zoom on input focus */
+        @supports (-webkit-touch-callout: none) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
+        }
+        
+        /* Tablet and Mobile Devices (768px and below) */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+            }
+            
+            .dashboard {
+                width: 100%;
+                overflow-x: hidden;
+            }
+            
+            .header {
+                padding: 20px 15px;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+                line-height: 1.3;
+            }
+            
+            .header p {
+                font-size: 0.9rem;
+                padding: 0 10px;
+            }
+            
+            .controls {
+                padding: 20px 15px;
+                margin-bottom: 20px;
+                border-radius: 15px;
+            }
+            
+            .control-row {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .control-group {
+                width: 100%;
+                margin-bottom: 15px;
+            }
+            
+            .control-group label {
+                font-size: 0.8rem;
+                margin-bottom: 6px;
+            }
+            
+            .control-group input,
+            .control-group select {
+                font-size: 16px !important; /* Prevent iOS zoom */
+                padding: 14px 12px;
+                width: 100%;
+                min-height: 48px; /* Touch target */
+            }
+            
+            select {
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300E87E' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right 10px center;
+                background-size: 20px;
+                padding-right: 40px;
+            }
+            
+            .btn {
+                width: 100%;
+                min-height: 44px; /* Touch target */
+                padding: 12px 16px;
+                font-size: 14px !important;
+                white-space: normal;
+                line-height: 1.2;
+                letter-spacing: 0.3px;
+            }
+            
+            .time-period-buttons {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .period-btn {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+                min-width: 45px;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .metric-card {
+                padding: 15px 10px;
+                border-radius: 15px;
+            }
+            
+            .metric-label {
+                font-size: 0.65rem !important;
+                line-height: 1.2;
+                margin-bottom: 5px;
+                letter-spacing: 0.2px;
+            }
+            
+            .metric-value {
+                font-size: 1.2rem;
+            }
+            
+            .metric-unit {
+                font-size: 0.7rem;
+            }
+            
+            /* Brand row on mobile: top-left Lé Tool, top-right Greenwood */
+            .brand-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                align-items: center;
+                margin-bottom: 12px;
+            }
+            .brand-left { justify-self: start; }
+            .brand-right { justify-self: end; }
+            
+            .logo-container > span {
+                font-size: 1.8rem !important;
+            }
+            
+            .logo-le, .logo-tool {
+                font-size: 2rem !important;
+            }
+            
+            .logo-greenwood, .logo-energy {
+                font-size: 1.6rem !important;
+            }
+            
+            .brand-divider { display: none; }
+            .logo-letool { height: 56px; }
+            .logo-greenwood-wordmark { height: 64px; transform: none; }
+            
+            /* Navigation tabs */
+            .nav-tabs {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                padding: 15px 10px;
+                overflow: visible;
+            }
+            
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
+            }
+            
+            .nav-tab {
+                flex: 1;
+                padding: 10px 8px;
+                font-size: 0.82rem;
+                min-width: 70px;
+                max-width: 120px;
+                letter-spacing: 0.2px;
+                text-align: center;
+            }
+            
+            /* Charts */
+            .chart-container {
+                padding: 20px 15px;
+                margin-bottom: 20px;
+                border-radius: 15px;
+            }
+            
+            .chart-title {
+                font-size: 1.1rem;
+            }
+            
+            .chart-wrapper {
+                height: 280px;
+            }
+            
+            .chart-wrapper.small {
+                height: 200px;
+            }
+            
+            /* Tables */
+            .results-table {
+                padding: 15px 10px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                min-width: 500px;
+                font-size: 0.85rem;
+            }
+            
+            th, td {
+                padding: 8px 6px;
+                font-size: 0.8rem;
+            }
+            
+            /* Info sections */
+            .info {
+                padding: 15px;
+                margin: 15px 0;
+                font-size: 0.9rem;
+            }
+            
+            #dataSource {
+                font-size: 0.85rem;
+                padding: 10px;
+            }
+        }
+        
+        /* Small Mobile Devices (480px and below) */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+            
+            .header h1 {
+                font-size: 1.2rem;
+            }
+            
+            .controls {
+                padding: 15px 10px;
+            }
+            
+            .metrics {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+            
+            .time-period-buttons {
+                grid-template-columns: repeat(2, 1fr);
+                display: grid;
+                gap: 8px;
+            }
+            
+            .period-btn {
+                width: 100%;
+            }
+            
+            .logo-le, .logo-tool {
+                font-size: 1.5rem !important;
+            }
+            
+            .logo-greenwood, .logo-energy {
+                font-size: 1.3rem !important;
+            }
+            
+            .nav-tab {
+                flex: 1;
+                padding: 8px 6px;
+                font-size: 0.75rem;
+                letter-spacing: 0.1px;
+                min-width: auto;
+            }
+            
+            .chart-wrapper {
+                height: 250px;
+            }
+        }
+        
+        /* Landscape Mode */
+        @media (max-height: 600px) and (orientation: landscape) {
+            .header {
+                padding: 10px 15px;
+            }
+            
+            .header h1 {
+                font-size: 1.3rem;
+            }
+            
+            .metrics {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+            
+            .metric-card {
+                padding: 10px;
+            }
+            
+            .metric-value {
+                font-size: 1rem;
+            }
+            
+            .chart-wrapper {
+                height: 200px;
+            }
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, rgba(0, 232, 126, 0.05), rgba(0, 232, 126, 0.1));
+            padding: 20px;
+            border-radius: 20px;
+            border: 2px solid var(--greenwood-primary);
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tabs::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--greenwood-primary), transparent);
+            animation: slideAcross 3s linear infinite;
+        }
+
+        @keyframes slideAcross {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .nav-tab {
+            padding: 12px 25px;
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-tab::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background: var(--greenwood-primary);
+            transition: all 0.3s;
+            transform: translateX(-50%);
+        }
+
+        .nav-tab.active {
+            color: var(--greenwood-dark);
+            background: linear-gradient(135deg, var(--greenwood-primary), var(--greenwood-accent));
+            border-color: var(--greenwood-primary);
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(0, 232, 126, 0.4);
+        }
+
+        .nav-tab:hover:not(.active) {
+            color: var(--greenwood-light);
+            border-color: var(--greenwood-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 232, 126, 0.2);
+        }
+
+        .nav-tab:hover::after {
+            width: 100%;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--card-border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--greenwood-primary), var(--greenwood-light));
+            transition: width 0.3s;
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 40px;
+            padding: 20px;
+            font-size: 0.95rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid var(--card-border);
+        }
+
+        .footer a {
+            color: var(--greenwood-primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .time-period-buttons {
+            display: flex;
+            gap: 8px;
+            padding: 4px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+        }
+
+        .period-btn {
+            padding: 8px 16px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 50px;
+        }
+
+        .period-btn:hover {
+            background: rgba(0, 232, 126, 0.1);
+            color: var(--text-primary);
+        }
+
+        .period-btn.active {
+            background: var(--greenwood-primary);
+            color: var(--greenwood-dark);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 232, 126, 0.3);
+        }
+        
+        input:disabled,
+        select:disabled {
+            opacity: 0.5;
+            background: #1a1a1a;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <!-- AEMO Live Dashboard Links -->
+    <div class="aemo-dashboard-links">
+        <a href="navigation.html" class="aemo-dashboard-link">
+            🧭 All Tools
+        </a>
+        <a href="dashboards/aemo-full-dashboard.html" class="aemo-dashboard-link" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            Full AEMO Dashboard
+        </a>
+    </div>
+    
+    <div class="dashboard">
+        <div class="header">
+            <div class="brand-row">
+                <img src="assets/letool-logo.svg" alt="Lé Tool" class="logo logo-letool brand-left" />
+                <img src="GreenwoodEnergy Logoo.svg" alt="Greenwood Energy" class="logo logo-greenwood-wordmark brand-right" />
+            </div>
+            <p class="subtitle">Advanced BESS Opportunity Dashboard</p>
+            <p class="powered-by">Powered by Greenwood Energy • Multi-unit battery energy storage system arbitrage calculator</p>
+            <div id="apiStatus" style="display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; padding: 8px 16px; background: rgba(0, 232, 126, 0.1); border-radius: 20px;">
+                <span id="statusLight" style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #ffc107;"></span>
+                <span id="statusText" style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.9);">Initializing...</span>
+            </div>
+            <p id="dataSource" style="font-size: 0.9rem; margin-top: 10px; color: #00E87E;"></p>
+        </div>
+        
+        <!-- Live Price Ticker -->
+        <div id="livePriceTicker" style="
+            background: linear-gradient(90deg, #0A0E1A 0%, #1A2333 50%, #0A0E1A 100%);
+            padding: 8px 0;
+            border-bottom: 1px solid #00E87E;
+            margin-bottom: 25px;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+            display: flex;
+            align-items: center;
+            min-height: 35px;
+            font-size: 13px;
+        ">
+            <div style="
+                padding: 0 15px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: rgba(0, 232, 126, 0.1);
+                border-right: 1px solid #00E87E;
+                z-index: 10;
+                position: relative;
+                flex-shrink: 0;
+            ">
+                <span style="
+                    font-weight: 600;
+                    color: #00E87E;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                ">
+                    <span style="
+                        display: inline-block;
+                        width: 8px;
+                        height: 8px;
+                        background: #00E87E;
+                        border-radius: 50%;
+                        animation: pulse 2s infinite;
+                    "></span>
+                    LIVE
+                </span>
+            </div>
+            <div id="tickerContent" style="
+                flex: 1;
+                overflow: hidden;
+                position: relative;
+            ">
+                <div id="tickerInner" style="
+                    display: inline-flex;
+                    gap: 25px;
+                    padding: 0 20px;
+                    white-space: nowrap;
+                ">
+                    <!-- Price items will be inserted here -->
+                </div>
+            </div>
+            <span id="lastUpdate" style="
+                font-size: 11px;
+                color: #999;
+                margin: 0 15px;
+                flex-shrink: 0;
+            "></span>
+        </div>
+        
+        <style>
+            #tickerInner {
+                animation: scroll 30s linear infinite;
+            }
+            
+            @keyframes scroll {
+                from { 
+                    transform: translateX(0); 
+                }
+                to { 
+                    transform: translateX(-33.33%); 
+                }
+            }
+            
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.5; }
+            }
+            
+            .ticker-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 0 10px;
+                white-space: nowrap;
+            }
+            
+            .ticker-region {
+                font-weight: 600;
+                color: #fff;
+            }
+            
+            .ticker-price {
+                font-weight: 500;
+                color: #00E87E;
+            }
+            
+            .ticker-change {
+                font-size: 0.85em;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+            
+            .ticker-change.up {
+                color: #00E87E;
+                background: rgba(0, 232, 126, 0.1);
+            }
+            
+            .ticker-change.down {
+                color: #ff6b6b;
+                background: rgba(255, 107, 107, 0.1);
+            }
+            
+            .ticker-crypto .ticker-region {
+                font-weight: 700;
+            }
+            
+            /* Mobile styles for ticker */
+            @media (max-width: 768px) {
+                #livePriceTicker {
+                    font-size: 11px;
+                    min-height: 30px;
+                }
+                
+                .ticker-item {
+                    gap: 5px;
+                    padding: 0 8px;
+                }
+                
+                #tickerInner {
+                    animation: scroll 20s linear infinite;
+                }
+            }
+        </style>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-section">
+                <h3>Analysis Period</h3>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label for="region">
+                            Region
+                            <span class="help-icon" data-tooltip="NEM region for price data. Each region has different supply/demand dynamics. VIC/SA have higher volatility due to renewable penetration.">?</span>
+                        </label>
+                        <select id="region">
+                            <option value="NSW1">New South Wales</option>
+                            <option value="QLD1">Queensland</option>
+                            <option value="SA1">South Australia</option>
+                            <option value="TAS1">Tasmania</option>
+                            <option value="VIC1" selected>Victoria</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="startDate">
+                            Start Date
+                            <span class="help-icon" data-tooltip="Beginning of analysis period. Historical dates use actual NEM prices. Future dates use Aurora forecasts for long-term projections.">?</span>
+                        </label>
+                        <input type="date" id="startDate" value="">
+                    </div>
+                    <div class="control-group">
+                        <label for="endDate">
+                            End Date
+                            <span class="help-icon" data-tooltip="End of analysis period. Longer periods show seasonal patterns but may take longer to compute. Max 365 days recommended.">?</span>
+                        </label>
+                        <input type="date" id="endDate" value="">
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 8px; margin-bottom: 10px; font-size: 11px; color: #aaa;">
+                    <span style="background: rgba(255,255,255,0.05); padding: 3px 8px; border-radius: 3px;">
+                        ⏱️ Times shown: NEM time (AEST, UTC+10)
+                    </span>
+                </div>
+                <div class="control-row" style="margin-top: 15px;">
+                    <div class="time-period-buttons">
+                        <button class="period-btn" onclick="setTimePeriod('yesterday', event)">Yesterday</button>
+                        <button class="period-btn active" onclick="setTimePeriod('7d', event)">7D</button>
+                        <button class="period-btn" onclick="setTimePeriod('14d', event)">14D</button>
+                        <button class="period-btn" onclick="setTimePeriod('30d', event)">30D</button>
+                        <button class="period-btn" onclick="setTimePeriod('90d', event)">90D</button>
+                        <button class="period-btn" onclick="setTimePeriod('2026', event)" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-weight: 600;">Jan 2026</button>
+                        <button class="period-btn" onclick="window.location.href='tools/forward-lite.html'" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; font-weight: 600;">Forward Lite</button>
+                        <button class="period-btn" onclick="window.location.href='trading/gamified-trading.html'" style="background: linear-gradient(135deg, #00E87E 0%, #00FF8C 100%); color: #000; font-weight: 600;">🎮 Trading Sim</button>
+                        <button class="period-btn" onclick="window.location.href='dashboards/data-monitor.html'" style="background: linear-gradient(135deg, #FF6B6B 0%, #FFB84D 100%); color: #fff; font-weight: 600;">📊 Data Monitor</button>
+                        <button class="info-btn" onclick="showForwardModelInfo()" style="margin-left: 10px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);" title="Forward Pricing Methodology">i</button>
+                    </div>
+                    <!-- Removed confusing Data Interval control -->
+                </div>
+            </div>
+
+            <div class="control-section">
+                <h3>Battery Configuration</h3>
+                <div class="control-row">
+                    <div class="control-group">
+                        <label for="numUnits">
+                            Number of BESS Units
+                            <span class="help-icon" data-tooltip="Number of identical battery systems. Scales both power (MW) and energy (MWh) proportionally. Use for modeling multiple containers.">?</span>
+                        </label>
+                        <input type="number" id="numUnits" value="1" min="1" max="10" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="power">
+                            Power per Unit (MW)
+                            <span class="help-icon" data-tooltip="Maximum charge/discharge rate. Determines how fast the battery responds to price signals. Higher power captures short duration peaks.">?</span>
+                        </label>
+                        <input type="number" id="power" value="5" min="1" max="100" step="0.5">
+                    </div>
+                    <div class="control-group">
+                        <label for="capacity">
+                            Capacity per Unit (MWh)
+                            <span class="help-icon" data-tooltip="Energy storage capacity. MWh/MW ratio = duration (e.g., 100MWh/25MW = 4hr battery). Longer duration captures wider spreads.">?</span>
+                        </label>
+                        <input type="number" id="capacity" value="20" min="1" max="200" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="efficiency">
+                            Round-trip Efficiency (%)
+                            <span class="help-icon" data-tooltip="Energy retained after charge/discharge cycle. 85% = 15% loss. Higher efficiency improves profit. Typical: 85-90% for lithium batteries.">?</span>
+                        </label>
+                        <input type="number" id="efficiency" value="85" min="70" max="95" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="maxCycles">
+                            Max Cycles per Day
+                            <span class="help-icon" data-tooltip="Maximum full cycles per day. Limits throughput to preserve warranty. 2 cycles = 200% daily throughput. Higher allows more arbitrage.">?</span>
+                        </label>
+                        <input type="number" id="maxCycles" value="2" min="0.5" max="4" step="0.5">
+                    </div>
+                    <div class="control-group">
+                        <label for="optimizationMode">
+                            Optimization Mode
+                            <span class="help-icon" data-tooltip="DP: Finds global optimum using dynamic programming (slower, optimal). Heuristic: Fast greedy algorithm (quick estimates). Use DP for investment decisions.">?</span>
+                        </label>
+                        <select id="optimizationMode">
+                            <option value="dp" selected>Dynamic Programming (Optimal)</option>
+                            <option value="heuristic">Heuristic (Fast)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="throughputCost">
+                            Degradation Cost ($/MWh)
+                            <span class="help-icon" data-tooltip="Cost penalty per MWh cycled for battery wear. $5-10 typical. Higher values preserve life but reduce cycling. $0 maximizes revenue but may void warranty.">?</span>
+                        </label>
+                        <input type="number" id="throughputCost" value="0" min="0" max="20" step="1" title="Cost per MWh of battery throughput to account for degradation">
+                    </div>
+                    <div class="control-group">
+                        <label for="siteMode">
+                            Site Mode
+                            <span class="help-icon" data-tooltip="FoM: Grid-connected utility storage with network charges. BtM: Customer-side storage avoiding network charges but with load constraints.">?</span>
+                        </label>
+                        <select id="siteMode" title="Front-of-meter or Behind-the-meter configuration">
+                            <option value="FoM" selected>Front-of-Meter (FoM)</option>
+                            <option value="BtM">Behind-the-Meter (BtM)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="tariff">
+                            Network Tariff
+                            <span class="help-icon" data-tooltip="Network usage charges for FoM batteries. AusNet tariffs include capacity, energy, and peak charges. Significantly impacts project economics.">?</span>
+                        </label>
+                        <select id="tariff" title="Network charges for utility-scale battery import/export (FoM only)">
+                            <option value="NONE">No Network Charges</option>
+                            <option value="AUSNET_UESH01T" selected>AusNet UESH01T (HV) - Utility ESS</option>
+                            <option value="AUSNET_UESS01T">AusNet UESS01T (Sub-Tx) - Utility ESS</option>
+                            <option value="AUSNET_NSSL01T">AusNet NSSL01T (Neighbourhood Storage - Large)</option>
+                            <option value="CUSTOM">Custom Tariff...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-row" style="justify-content: center; margin-top: 25px; gap: 15px;">
+                <button class="btn" onclick="analyzeOpportunity()">
+                    Calculate Opportunity
+                </button>
+            </div>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing market data...</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+            <p id="progressText" style="margin-top: 10px; font-size: 0.9rem;"></p>
+        </div>
+
+        <div class="metrics" id="metrics" style="display: none;">
+            <div class="metric-card highlight">
+                <div class="metric-label">Net Revenue</div>
+                <div class="metric-value money" id="totalRevenue">$0</div>
+                <div class="metric-unit">After all charges</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Wholesale</div>
+                <div class="metric-value" id="wholesaleRevenue">$0</div>
+                <div class="metric-unit">Energy arbitrage</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Network</div>
+                <div class="metric-value" id="networkCharges">$0</div>
+                <div class="metric-unit">Import/Export</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Standing</div>
+                <div class="metric-value" id="standingCharges">$0</div>
+                <div class="metric-unit">Fixed daily</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Demand</div>
+                <div class="metric-value" id="demandCharges">$0</div>
+                <div class="metric-unit">Peak kVA</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Daily Average</div>
+                <div class="metric-value" id="avgDaily">$0</div>
+                <div class="metric-unit">Net per day</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Energy</div>
+                <div class="metric-value" id="totalEnergy">0</div>
+                <div class="metric-unit">MWh traded</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Cycles/Day</div>
+                <div class="metric-value" id="avgCycles">0</div>
+                <div class="metric-unit">cycles</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Best Day</div>
+                <div class="metric-value positive" id="bestDay">$0</div>
+                <div class="metric-unit" id="bestDayDate">-</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Annualized</div>
+                <div class="metric-value money" id="annualRevenue">$0</div>
+                <div class="metric-unit">Net per year</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Active Tariff</div>
+                <div class="metric-value" id="activeTariff" style="font-size: 1rem;">None</div>
+                <div class="metric-unit">Network charges</div>
+            </div>
+        </div>
+
+        <div class="nav-tabs" id="navTabs" style="display: none;">
+            <button class="nav-tab active" onclick="switchTab('daily')">Daily</button>
+            <button class="nav-tab" onclick="switchTab('summary')">Summary</button>
+            <button class="nav-tab" onclick="switchTab('detailed')">Details</button>
+        </div>
+
+        <div id="dailyTab" class="tab-content active">
+            <!-- SoC chart removed - now integrated into price chart -->
+            <div class="chart-container" id="priceChartContainer" style="display: none;">
+                <h3 class="chart-title">
+                    <span>Price, Operations & State of Charge</span>
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="priceChart"></canvas>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00E87E;"></div>
+                        <span style="color: #ffffff;">Market Price</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none; border: 2px dashed rgba(255, 255, 255, 0.8);"></div>
+                        <span style="color: #ffffff;">State of Charge</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: rgba(0, 232, 126, 0.3);"></div>
+                        <span style="color: #ffffff;">Charging</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: rgba(255, 107, 107, 0.3);"></div>
+                        <span style="color: #ffffff;">Discharging</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none; border: 1px dashed #4A90E2;"></div>
+                        <span style="color: #ffffff;">Buy Below</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: none; border: 1px dashed #E94B3C;"></div>
+                        <span style="color: #ffffff;">Sell Above</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="summaryTab" class="tab-content">
+            <div class="chart-container" id="dailyRevenueChartContainer" style="display: none;">
+                <h3 class="chart-title">
+                    <span>Daily Revenue Over Period</span>
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="dailyRevenueChart"></canvas>
+                </div>
+            </div>
+
+            <div class="results-table" id="resultsTable" style="display: none;">
+                <h3>Daily Breakdown</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Revenue</th>
+                            <th>Cycles</th>
+                            <th>Avg Spread</th>
+                            <th>Energy Traded</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="detailedTab" class="tab-content">
+            <div class="chart-container" id="cumulativeChartContainer" style="display: none;">
+                <h3 class="chart-title">
+                    <span>Cumulative Revenue</span>
+                </h3>
+                <div class="chart-wrapper">
+                    <canvas id="cumulativeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container" id="utilizationChartContainer" style="display: none;">
+                <h3 class="chart-title">
+                    <span>Battery Utilization</span>
+                </h3>
+                <div class="chart-wrapper small">
+                    <canvas id="utilizationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="info" id="algorithmExplainer" style="display: none; margin: 20px auto; max-width: 1200px;">
+            <h3 style="color: var(--greenwood-primary); margin-bottom: 15px;">🧠 How Your Selected Optimizer Works</h3>
+            
+            <div id="dpExplanation" style="display: none;">
+                <h4 style="color: var(--greenwood-primary); margin-top: 15px;">Dynamic Programming Mode (Currently Selected)</h4>
+                <p style="margin-bottom: 10px;">
+                    The <strong>Dynamic Programming (DP) optimizer</strong> finds the mathematically optimal trading strategy by working backwards from the end of the day:
+                </p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>• <strong>Perfect Foresight:</strong> Knows all prices in advance and finds the absolute best schedule</li>
+                    <li>• <strong>Value Function:</strong> Calculates the future value of energy at each time and state</li>
+                    <li>• <strong>Reservation Prices:</strong> The blue/red lines show the "decision boundaries"</li>
+                    <li style="margin-left: 20px;">→ <span style="color: #4A90E2; font-weight: bold;">Blue line (Buy Below):</span> Charge when price drops below this threshold</li>
+                    <li style="margin-left: 20px;">→ <span style="color: #E94B3C; font-weight: bold;">Red line (Sell Above):</span> Discharge when price rises above this threshold</li>
+                    <li>• <strong>Salvage Value:</strong> Values leftover energy at end of day (doesn't force battery to empty)</li>
+                    <li>• <strong>Cycle Management:</strong> Automatically calibrates degradation cost to respect cycle limits</li>
+                </ul>
+                <p style="margin-top: 15px; padding: 10px; background: rgba(0, 232, 126, 0.1); border-radius: 8px;">
+                    💡 <strong>Pro Tip:</strong> The DP optimizer shows what's theoretically possible with perfect price knowledge. 
+                    Real-world returns will be lower due to forecast uncertainty, but this provides an upper bound for arbitrage value.
+                </p>
+            </div>
+            
+            <div id="heuristicExplanation" style="display: none;">
+                <h4 style="color: var(--greenwood-primary); margin-top: 15px;">Heuristic Mode (Currently Selected)</h4>
+                <p style="margin-bottom: 10px;">
+                    The <strong>Heuristic optimizer</strong> uses a greedy algorithm that identifies the best price spreads:
+                </p>
+                <ul style="margin-left: 20px; margin-bottom: 15px;">
+                    <li>• <strong>Spread Detection:</strong> Scans for largest price differences (buy low, sell high)</li>
+                    <li>• <strong>Window Selection:</strong> Picks non-overlapping charge/discharge periods</li>
+                    <li>• <strong>Speed:</strong> Much faster than DP, suitable for real-time decisions</li>
+                    <li>• <strong>Trade-off:</strong> May miss complex opportunities that DP would find</li>
+                    <li>• <strong>No Reservation Prices:</strong> This mode doesn't show blue/red threshold lines</li>
+                </ul>
+                <p style="margin-top: 15px; padding: 10px; background: rgba(0, 232, 126, 0.1); border-radius: 8px;">
+                    💡 <strong>Pro Tip:</strong> Heuristic mode is good for quick estimates and when you need fast results. 
+                    It typically captures 85-95% of the DP optimal value.
+                </p>
+            </div>
+            
+            <h4 style="color: var(--greenwood-primary); margin-top: 20px;">Key Parameters (Both Modes)</h4>
+            <ul style="margin-left: 20px;">
+                <li>• <strong>Round-trip Efficiency:</strong> Energy lost in charge/discharge cycle (typically 85-90%)</li>
+                <li>• <strong>Max Cycles:</strong> Limits daily throughput to preserve battery life</li>
+                <li>• <strong>Degradation Cost:</strong> $/MWh penalty for battery wear (auto-calibrated or manual)</li>
+                <li>• <strong>Min Run Time:</strong> Enforces realistic 15-minute minimum operations</li>
+            </ul>
+        </div>
+        
+        <div class="footer">
+            <p style="margin-bottom: 10px;">© 2025 Greenwood Energy • <a href="https://greenwood.io" target="_blank">greenwood.io</a></p>
+            <p style="color: var(--greenwood-primary); font-weight: 600;">Lé Tool v1.1 • Advanced BESS Opportunity Analysis Platform</p>
+        </div>
+    </div>
+
+    <!-- Forward Pricing Model Information Modal -->
+    <div id="forwardModelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Forward Pricing Methodology</h2>
+                <span class="close-btn" onclick="closeForwardModelInfo()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <h4>Overview</h4>
+                <p>
+                    Our forward pricing model integrates industry-leading forecasts from Aurora Energy Research with real-time 
+                    AEMO market data to provide bankable revenue projections for battery energy storage systems (BESS) in the 
+                    National Electricity Market (NEM).
+                </p>
+
+                <h4>Aurora Energy Research Forecasts</h4>
+                <p>
+                    Aurora Energy Research is the globally recognized authority on power market analytics, trusted by over 400 
+                    organizations including major banks, infrastructure funds, and energy companies. Their Australian power market 
+                    forecasts are considered the gold standard for project finance and investment decisions.
+                </p>
+                <p>
+                    Key features of Aurora's methodology:
+                </p>
+                <ul>
+                    <li><strong>Fundamental market modeling:</strong> Bottom-up simulation of all generation assets, demand patterns, and network constraints</li>
+                    <li><strong>Policy integration:</strong> Incorporates federal and state renewable energy targets, capacity mechanisms, and regulatory changes</li>
+                    <li><strong>Technology evolution:</strong> Models the impact of increasing renewable penetration, battery deployment, and grid-forming inverters</li>
+                    <li><strong>Scenario analysis:</strong> Central case calibrated against futures markets with sensitivity scenarios for key uncertainties</li>
+                </ul>
+
+                <h4>Data Integration Hierarchy</h4>
+                <p>
+                    Our platform seamlessly blends multiple data sources to provide optimal forecast accuracy across all time horizons:
+                </p>
+                <div class="methodology-box">
+                    <strong>0-2 hours:</strong> AEMO P5 Predispatch (5-minute granularity)<br>
+                    <strong>2-48 hours:</strong> AEMO PD30 Predispatch (30-minute granularity)<br>
+                    <strong>Beyond 48 hours:</strong> Aurora Energy Research seasonal forecasts<br>
+                </div>
+                <p>
+                    This hierarchical approach ensures maximum accuracy for near-term optimization while maintaining robust 
+                    long-term projections aligned with market fundamentals.
+                </p>
+
+                <h4>Storage Spread Calculation</h4>
+                <p>
+                    Battery arbitrage opportunities are quantified through rolling window spread calculations, consistent with 
+                    industry-standard project finance models:
+                </p>
+                <div class="formula">
+                    <strong>0.5-hour spread (S₀.₅):</strong> max(price) - min(price) within single interval<br>
+                    <strong>1-hour spread (S₁):</strong> max(avg₂) - min(avg₂) for 2-interval rolling windows<br>
+                    <strong>2-hour spread (S₂):</strong> max(avg₄) - min(avg₄) for 4-interval rolling windows<br>
+                    <strong>4-hour spread (S₄):</strong> max(avg₈) - min(avg₈) for 8-interval rolling windows<br>
+                </div>
+                <p>
+                    These spreads directly correlate with BESS revenue potential for different duration configurations, 
+                    enabling accurate feasibility assessment and optimized system sizing.
+                </p>
+
+                <h4>Intraday Price Formation</h4>
+                <p>
+                    Aurora's annual wholesale prices and storage spreads are translated into realistic 30-minute price patterns 
+                    using NEM-specific characteristics:
+                </p>
+                <ul>
+                    <li><strong>Duck curve dynamics:</strong> Solar-induced midday price depression (10:00-15:00 AEST)</li>
+                    <li><strong>Evening peak premiums:</strong> Demand-driven price elevation (17:00-21:00 AEST)</li>
+                    <li><strong>Overnight baseload:</strong> Stable low prices during minimum demand periods</li>
+                    <li><strong>Volatility events:</strong> Statistically distributed price spikes and negative pricing periods based on historical frequency analysis</li>
+                </ul>
+
+                <h4>Bankability and Risk Assessment</h4>
+                <p>
+                    The forward curves include P10/P90 confidence bands derived from:
+                </p>
+                <ul>
+                    <li>Historical volatility patterns adjusted for changing market dynamics</li>
+                    <li>Aurora's scenario analysis for policy and technology uncertainties</li>
+                    <li>Weather-driven demand and renewable generation variability</li>
+                    <li>Forced outage rates and network constraint probability distributions</li>
+                </ul>
+                <p>
+                    This probabilistic approach enables comprehensive risk assessment for debt sizing, including:
+                </p>
+                <ul>
+                    <li>Debt Service Coverage Ratio (DSCR) calculations under P90 downside scenarios</li>
+                    <li>Revenue stability analysis for contracted vs merchant exposure</li>
+                    <li>Sensitivity testing for key market drivers</li>
+                </ul>
+
+                <h4>Validation and Calibration</h4>
+                <p>
+                    Forward prices are continuously validated against:
+                </p>
+                <ul>
+                    <li>ASX Energy quarterly base futures for near-term periods</li>
+                    <li>Recent AEMO spot price outcomes and predispatch accuracy</li>
+                    <li>Observed storage cycling patterns from operational BESS assets</li>
+                    <li>Power Purchase Agreement (PPA) pricing from recent transactions</li>
+                </ul>
+
+                <h4>Regulatory Compliance</h4>
+                <p>
+                    All projections incorporate current and announced regulatory frameworks including:
+                </p>
+                <ul>
+                    <li>Capacity Investment Scheme (CIS) tender parameters</li>
+                    <li>Renewable Energy Zone (REZ) development timelines</li>
+                    <li>Frequency Control Ancillary Services (FCAS) market co-optimization</li>
+                    <li>Five-minute settlement and Global Settlement implementation</li>
+                </ul>
+
+                <div class="methodology-box" style="margin-top: 30px;">
+                    <strong>Note:</strong> This model is designed for preliminary feasibility assessment and strategic planning. 
+                    Detailed investment decisions should incorporate site-specific factors, connection studies, and formal 
+                    independent market reports as required by project finance lenders.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showForwardModelInfo() {
+            document.getElementById('forwardModelModal').style.display = 'block';
+        }
+
+        function closeForwardModelInfo() {
+            document.getElementById('forwardModelModal').style.display = 'none';
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('forwardModelModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+
+    <script src="tools/dp-optimizer.js?v=1.1.1"></script>
+    <script src="scripts/advanced-script.js?v=1.1.3"></script>
+</body>
+</html>

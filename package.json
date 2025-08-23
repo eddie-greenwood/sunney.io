@@ -1,0 +1,31 @@
+{
+  "name": "sunney-platform",
+  "version": "1.0.0",
+  "description": "Professional energy trading platform for Australian NEM",
+  "private": true,
+  "workspaces": [
+    "workers/*",
+    "pages"
+  ],
+  "scripts": {
+    "setup": "./scripts/setup.sh",
+    "dev:auth": "cd workers/auth && wrangler dev",
+    "dev:api": "cd workers/api && wrangler dev",
+    "dev:scraper": "cd workers/scraper && wrangler dev",
+    "dev:pages": "cd pages && wrangler pages dev public",
+    "deploy:auth": "cd workers/auth && wrangler deploy",
+    "deploy:api": "cd workers/api && wrangler deploy",
+    "deploy:scraper": "cd workers/scraper && wrangler deploy",
+    "deploy:pages": "cd pages && wrangler pages deploy public --project-name sunney-pages",
+    "deploy:all": "npm run deploy:auth && npm run deploy:api && npm run deploy:scraper && npm run deploy:pages",
+    "logs:auth": "wrangler tail sunney-auth",
+    "logs:api": "wrangler tail sunney-api",
+    "logs:scraper": "wrangler tail sunney-scraper",
+    "test": "npm test --workspaces"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "wrangler": "^3.70.0",
+    "@cloudflare/workers-types": "^4.0.0"
+  }
+}

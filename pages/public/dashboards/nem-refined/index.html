@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEM Live - Greenwood Energy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --greenwood-primary: #21E490;
+            --greenwood-dark: #0a1f1a;
+            --greenwood-grey: #8B8D8F;
+            --price-negative: #FF6E33;
+            --price-low: #21E490;
+            --price-medium: #FFA500;
+            --price-high: #FF6E33;
+            --price-extreme: #FF3333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow-x: hidden;
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+
+        #container {
+            width: 100%;
+            min-height: 100vh;
+            background: 
+                radial-gradient(ellipse at 30% 20%, rgba(33, 228, 144, 0.15) 0%, transparent 40%),
+                radial-gradient(ellipse at 70% 40%, rgba(0, 255, 140, 0.1) 0%, transparent 40%),
+                radial-gradient(ellipse at 50% 80%, rgba(0, 201, 106, 0.12) 0%, transparent 45%),
+                radial-gradient(ellipse at 20% 70%, rgba(33, 228, 144, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(0, 255, 140, 0.1) 0%, transparent 50%),
+                linear-gradient(180deg, #000000 0%, #0a1a0f 50%, #000000 100%);
+            animation: backgroundPulse 20s ease-in-out infinite;
+        }
+
+        @keyframes backgroundPulse {
+            0%, 100% { 
+                filter: brightness(1) saturate(1);
+            }
+            50% { 
+                filter: brightness(1.1) saturate(1.2);
+            }
+        }
+
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            border-bottom: 1px solid rgba(33, 228, 144, 0.2);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .logo .green {
+            color: var(--greenwood-primary);
+        }
+
+        .header-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: rgba(33, 228, 144, 0.1);
+            border: 1px solid rgba(33, 228, 144, 0.3);
+            border-radius: 15px;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--greenwood-primary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(33, 228, 144, 0.7); }
+            70% { opacity: 1; box-shadow: 0 0 0 10px rgba(33, 228, 144, 0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(33, 228, 144, 0); }
+        }
+
+        #main-content {
+            padding-top: 60px;
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            gap: 20px;
+            max-width: 100%;
+            padding-left: 20px;
+            padding-right: 20px;
+            padding-bottom: 20px;
+        }
+
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .left-panel::-webkit-scrollbar,
+        .right-panel::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-track,
+        .right-panel::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb,
+        .right-panel::-webkit-scrollbar-thumb {
+            background: rgba(33, 228, 144, 0.3);
+            border-radius: 2px;
+        }
+
+        #mapContainer {
+            width: 100%;
+            height: calc(100vh - 120px);
+            min-height: 600px;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(33, 228, 144, 0.05) 0%, transparent 70%);
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(40px) saturate(150%);
+            border: 1px solid rgba(33, 228, 144, 0.2);
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.8),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+
+
+        .metric-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .metric-unit {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-left: 4px;
+        }
+
+        /* Arbitrage Card */
+        .arbitrage-card {
+            background: 
+                linear-gradient(135deg, rgba(33, 228, 144, 0.15), rgba(33, 228, 144, 0.05)),
+                radial-gradient(ellipse at 20% 80%, rgba(33, 228, 144, 0.1) 0%, transparent 50%);
+            border: 2px solid rgba(33, 228, 144, 0.4);
+            grid-column: span 2;
+            animation: arbitragePulse 4s ease-in-out infinite;
+        }
+
+        @keyframes arbitragePulse {
+            0%, 100% { 
+                border-color: rgba(33, 228, 144, 0.4);
+                box-shadow: 
+                    0 10px 40px rgba(0, 0, 0, 0.8),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            }
+            50% { 
+                border-color: rgba(33, 228, 144, 0.6);
+                box-shadow: 
+                    0 10px 40px rgba(0, 0, 0, 0.8),
+                    0 0 30px rgba(33, 228, 144, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+        }
+
+        .arbitrage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .arbitrage-title {
+            color: #21E490;
+            font-weight: 700;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .period-buttons {
+            display: flex;
+            gap: 4px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .period-btn {
+            padding: 4px 10px;
+            font-size: 10px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .period-btn.active {
+            background: rgba(33, 228, 144, 0.2);
+            border-color: rgba(33, 228, 144, 0.5);
+            color: #21E490;
+            font-weight: 600;
+        }
+
+        .arbitrage-values {
+            display: flex;
+            gap: 30px;
+            margin: 15px 0;
+        }
+
+        .arbitrage-stat {
+            flex: 1;
+        }
+
+        .arbitrage-stat-label {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .arbitrage-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #21E490;
+        }
+
+        #arbitrageDetails {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+
+        /* Status Bar */
+        #statusBar {
+            width: 100%;
+            max-width: 1200px;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            border-top: 1px solid rgba(33, 228, 144, 0.2);
+            margin-top: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .status-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+
+        .status-value {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* SVG Map Styles */
+        .state-node {
+            cursor: pointer;
+        }
+
+        .state-circle {
+            fill: rgba(0, 0, 0, 0.8);
+            stroke-width: 2;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .state-label {
+            fill: #ffffff;
+            font-size: 11px;
+            font-weight: 600;
+            text-anchor: middle;
+            opacity: 0.8;
+        }
+
+        .state-price {
+            font-size: 18px;
+            font-weight: 700;
+            text-anchor: middle;
+        }
+
+        .state-demand {
+            font-size: 10px;
+            fill: rgba(255, 255, 255, 0.6);
+            text-anchor: middle;
+        }
+
+        .interconnector {
+            stroke: rgba(33, 228, 144, 0.3);
+            stroke-width: 2;
+            fill: none;
+            stroke-dasharray: 5,5;
+            animation: flowDash 2s linear infinite;
+            filter: drop-shadow(0 0 3px rgba(33, 228, 144, 0.4));
+        }
+
+        @keyframes flowDash {
+            0% { stroke-dashoffset: 0; }
+            100% { stroke-dashoffset: -10; }
+        }
+
+        /* Particle flow animation */
+        .flow-particle {
+            fill: #21E490;
+            r: 3;
+            filter: drop-shadow(0 0 6px rgba(33, 228, 144, 0.8));
+        }
+
+        /* Mobile Styles */
+        @media (max-width: 768px) {
+            #header {
+                height: 50px;
+                padding: 0 15px;
+            }
+
+            .logo {
+                font-size: 16px;
+            }
+
+            .header-info {
+                gap: 10px;
+            }
+
+            .live-indicator {
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+
+            #main-content {
+                padding-top: 50px;
+            }
+
+            #mapContainer {
+                height: 40vh;
+                min-height: 250px;
+                padding: 10px;
+            }
+
+            #infoPanel {
+                grid-template-columns: 1fr;
+                padding: 15px;
+            }
+
+            .arbitrage-card {
+                grid-column: span 1;
+            }
+
+            .metric-value {
+                font-size: 20px;
+            }
+
+            .arbitrage-stat-value {
+                font-size: 24px;
+            }
+
+            .arbitrage-values {
+                gap: 20px;
+            }
+
+            #statusBar {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 15px;
+                gap: 15px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #infoPanel {
+                padding: 10px;
+            }
+
+            .metric-card {
+                padding: 12px;
+            }
+
+            .arbitrage-values {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            #statusBar {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="header">
+            <div class="logo">
+                <span class="green">Greenwood</span> Energy
+            </div>
+            <div class="header-info">
+                <div class="live-indicator">
+                    <div class="live-dot"></div>
+                    <span>LIVE DATA</span>
+                </div>
+                <div id="currentTime"></div>
+            </div>
+        </div>
+
+        <div id="main-content">
+            <!-- Left Panel -->
+            <div class="left-panel">
+                <div class="metric-card">
+                    <div class="metric-label">Total Demand</div>
+                    <div>
+                        <span class="metric-value" id="totalDemand">--</span>
+                        <span class="metric-unit">MW</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Total Generation</div>
+                    <div>
+                        <span class="metric-value" id="totalGeneration">--</span>
+                        <span class="metric-unit">MW</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-label">Max Region Price</div>
+                    <div>
+                        <span class="metric-value" id="maxPrice" style="color: #FF6E33;">$--</span>
+                        <span class="metric-unit">/MWh</span>
+                    </div>
+                </div>
+
+                <div class="metric-card arbitrage-card">
+                    <div class="arbitrage-header">
+                        <div class="arbitrage-title">
+                            <span id="arbitrageTimeLabel">4-HOUR</span>
+                            <span>ARBITRAGE</span>
+                            <span style="font-size: 9px; background: #21E490; color: #0a1f1a; padding: 2px 5px; border-radius: 3px;">LIVE</span>
+                        </div>
+                    </div>
+                    
+                    <div class="period-buttons">
+                        <button onclick="setArbitragePeriod('4h')" id="period-4h" class="period-btn active">4 Hour</button>
+                        <button onclick="setArbitragePeriod('24h')" id="period-24h" class="period-btn">24 Hour</button>
+                        <button onclick="setArbitragePeriod('7d')" id="period-7d" class="period-btn">7 Day</button>
+                        <button onclick="setArbitragePeriod('30d')" id="period-30d" class="period-btn">Monthly</button>
+                        <button onclick="setArbitragePeriod('1y')" id="period-1y" class="period-btn">Yearly</button>
+                    </div>
+
+                    <div class="arbitrage-values">
+                        <div class="arbitrage-stat">
+                            <div class="arbitrage-stat-label">Current Spread</div>
+                            <div>
+                                <span class="arbitrage-stat-value" id="fourHourSpread">$--</span>
+                                <span class="metric-unit">/MWh</span>
+                            </div>
+                        </div>
+                        <div class="arbitrage-stat" id="dailyPeakDisplay" style="display: none;">
+                            <div class="arbitrage-stat-label">Daily Peak</div>
+                            <div>
+                                <span class="arbitrage-stat-value" id="dailyPeakValue" style="font-size: 22px; color: rgba(255,255,255,0.8);">$--</span>
+                                <span class="metric-unit">/MWh</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="arbitrageDetails">
+                        Calculating opportunities...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Map Container (Center) -->
+            <div id="mapContainer">
+                <svg id="nemMap" viewBox="100 50 900 850" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 100%;">
+                    <defs>
+                        <linearGradient id="priceGradientLow" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#21E490;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#21E490;stop-opacity:0.3" />
+                        </linearGradient>
+                        <linearGradient id="priceGradientMedium" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF6E33;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#FF6E33;stop-opacity:0.3" />
+                        </linearGradient>
+                        <linearGradient id="priceGradientHigh" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#FF3333;stop-opacity:0.8" />
+                            <stop offset="100%" style="stop-color:#FF3333;stop-opacity:0.3" />
+                        </linearGradient>
+                        
+                        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    
+                    <!-- Subtle grid pattern -->
+                    <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+                        <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(139, 141, 143, 0.05)" stroke-width="1"/>
+                    </pattern>
+                    <rect width="100%" height="100%" fill="url(#grid)" />
+                    
+                    <g id="interconnectors"></g>
+                    <g id="flowParticles"></g>
+                    <g id="stateNodes"></g>
+                </svg>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="right-panel">
+                <div class="metric-card">
+                    <div class="metric-label">Settlement Time</div>
+                    <div>
+                        <span class="metric-value" id="settlementTime" style="font-size: 18px;">--:--</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Last Update</div>
+                    <div>
+                        <span class="metric-value" id="lastUpdateTime" style="font-size: 18px;">--:--</span>
+                    </div>
+                </div>
+                
+                <div class="metric-card">
+                    <div class="metric-label">Data Status</div>
+                    <div>
+                        <span class="metric-value" style="font-size: 18px; color: #21E490;">Connected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'https://aemo-unified-source.eddie-37d.workers.dev/api/latest';
+        let currentData = null;
+        let currentPeriod = '4h';
+
+        // State positions on map
+        const statePositions = {
+            'QLD1': { x: 750, y: 200, short: 'QLD' },
+            'NSW1': { x: 700, y: 400, short: 'NSW' },
+            'VIC1': { x: 600, y: 600, short: 'VIC' },
+            'TAS1': { x: 650, y: 750, short: 'TAS' },
+            'SA1': { x: 400, y: 500, short: 'SA' }
+        };
+
+        // Draw state nodes
+        function drawStates() {
+            const container = document.getElementById('stateNodes');
+            if (!container) return;
+            container.innerHTML = '';
+            
+            Object.entries(statePositions).forEach(([state, pos]) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'state-node');
+                g.setAttribute('id', `state-${state}`);
+                g.setAttribute('transform', `translate(${pos.x}, ${pos.y})`);
+                
+                // Outer circle
+                const outerCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                outerCircle.setAttribute('class', 'state-circle');
+                outerCircle.setAttribute('r', '60');
+                outerCircle.setAttribute('fill', 'rgba(0, 0, 0, 0.9)');
+                outerCircle.setAttribute('stroke', '#21E490');
+                outerCircle.setAttribute('stroke-width', '2');
+                
+                // State label
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'state-label');
+                label.setAttribute('y', '-35');
+                label.textContent = pos.short;
+                
+                // Price text
+                const price = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                price.setAttribute('class', 'state-price');
+                price.setAttribute('id', `price-${state}`);
+                price.setAttribute('y', '5');
+                price.textContent = '$--';
+                
+                // Demand text
+                const demand = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                demand.setAttribute('class', 'state-demand');
+                demand.setAttribute('id', `demand-${state}`);
+                demand.setAttribute('y', '25');
+                demand.textContent = '-- MW';
+                
+                g.appendChild(outerCircle);
+                g.appendChild(label);
+                g.appendChild(price);
+                g.appendChild(demand);
+                container.appendChild(g);
+            });
+        }
+
+        // Draw interconnectors
+        function drawInterconnectors() {
+            const container = document.getElementById('interconnectors');
+            container.innerHTML = '';
+            
+            const connections = [
+                ['QLD1', 'NSW1'],
+                ['NSW1', 'VIC1'],
+                ['VIC1', 'TAS1'],
+                ['VIC1', 'SA1']
+            ];
+            
+            connections.forEach(([from, to]) => {
+                const fromPos = statePositions[from];
+                const toPos = statePositions[to];
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('class', 'interconnector');
+                line.setAttribute('x1', fromPos.x);
+                line.setAttribute('y1', fromPos.y);
+                line.setAttribute('x2', toPos.x);
+                line.setAttribute('y2', toPos.y);
+                
+                container.appendChild(line);
+            });
+        }
+
+        // Update visualization
+        function updateVisualization(data) {
+            if (!data || !data.regions) return;
+            
+            let totalDemand = 0;
+            let totalGeneration = 0;
+            let maxPriceRegion = { price: -Infinity };
+            
+            Object.entries(data.regions).forEach(([region, regionData]) => {
+                const priceValue = regionData.energyPrice || 0;
+                const demandValue = regionData.totalDemand || regionData.scheduledDemand || 0;
+                const genValue = regionData.dispatchableGeneration || 0;
+                
+                totalDemand += demandValue;
+                totalGeneration += genValue;
+                
+                if (priceValue > maxPriceRegion.price) {
+                    maxPriceRegion.price = priceValue;
+                }
+                
+                // Update price display
+                const priceEl = document.getElementById(`price-${region}`);
+                if (priceEl) {
+                    priceEl.textContent = `$${priceValue.toFixed(0)}`;
+                    priceEl.setAttribute('fill', getPriceColor(priceValue));
+                }
+                
+                // Update demand display
+                const demandEl = document.getElementById(`demand-${region}`);
+                if (demandEl) {
+                    demandEl.textContent = `${Math.round(demandValue).toLocaleString()} MW`;
+                }
+                
+                // Update circle color
+                const stateNode = document.getElementById(`state-${region}`);
+                if (stateNode) {
+                    const circle = stateNode.querySelector('circle');
+                    if (circle) {
+                        circle.setAttribute('stroke', `url(#${getPriceGradient(priceValue)})`);
+                    }
+                }
+            });
+            
+            // Update info panel
+            document.getElementById('totalDemand').textContent = Math.round(totalDemand).toLocaleString();
+            document.getElementById('totalGeneration').textContent = Math.round(totalGeneration).toLocaleString();
+            document.getElementById('maxPrice').textContent = `$${maxPriceRegion.price.toFixed(0)}`;
+            
+            // Display arbitrage
+            displayArbitrageOpportunities(data);
+            
+            // Update status bar
+            document.getElementById('settlementTime').textContent = 
+                data.settlementTime ? data.settlementTime.split(' ')[1]?.substring(0, 5) || '--:--' : '--:--';
+        }
+
+        // Display arbitrage opportunities
+        function displayArbitrageOpportunities(data) {
+            window.lastArbitrageData = data;
+            
+            if (!data || !data.arbitrage) {
+                document.getElementById('fourHourSpread').textContent = '$--';
+                document.getElementById('arbitrageDetails').innerHTML = 'Waiting for arbitrage data...';
+                return;
+            }
+            
+            const arbitrage = data.arbitrage;
+            
+            if (arbitrage.isLearning) {
+                const dataMinutes = arbitrage.dataPoints * 5;
+                document.getElementById('fourHourSpread').textContent = '$--';
+                document.getElementById('arbitrageDetails').innerHTML = `Learning price patterns... ${dataMinutes} min of data collected`;
+                return;
+            }
+            
+            if (arbitrage.opportunities && arbitrage.opportunities.length > 0) {
+                const best = arbitrage.opportunities[0];
+                document.getElementById('fourHourSpread').textContent = '$' + best.currentSpread.toFixed(0);
+                
+                if (arbitrage.dailyPeak > 0) {
+                    document.getElementById('dailyPeakDisplay').style.display = 'block';
+                    document.getElementById('dailyPeakValue').textContent = '$' + arbitrage.dailyPeak.toFixed(0);
+                }
+                
+                let opportunitiesHtml = '';
+                arbitrage.opportunities.forEach((opp, index) => {
+                    const stateShort = statePositions[opp.region]?.short || opp.region;
+                    const profit = opp.efficiency.toFixed(0);
+                    
+                    if (index === 0) {
+                        opportunitiesHtml += `
+                            <div style="background: rgba(33, 228, 144, 0.1); padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+                                <div style="color: #21E490; font-weight: 600;">
+                                    🏆 ${stateShort}: $${opp.currentSpread.toFixed(0)} spread
+                                </div>
+                                <div style="font-size: 10px; margin: 4px 0;">
+                                    Buy $${opp.buyPrice.toFixed(0)} → Sell $${opp.sellPrice.toFixed(0)}
+                                </div>
+                                <div style="color: #21E490; font-size: 11px;">
+                                    Net Profit (20MWh): $${profit}
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        opportunitiesHtml += `
+                            <div style="padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>${stateShort}: $${opp.currentSpread.toFixed(0)}</span>
+                                    <span style="color: #21E490;">$${profit}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                document.getElementById('arbitrageDetails').innerHTML = opportunitiesHtml;
+            } else {
+                document.getElementById('fourHourSpread').textContent = '$0';
+                document.getElementById('arbitrageDetails').innerHTML = 'No arbitrage opportunities at this time';
+            }
+        }
+
+        // Helper functions
+        function getPriceColor(price) {
+            if (price < 0) return '#FF6E33';
+            if (price < 100) return '#21E490';
+            if (price < 300) return '#FFA500';
+            return '#FF3333';
+        }
+
+        function getPriceGradient(price) {
+            if (price < 100) return 'priceGradientLow';
+            if (price < 300) return 'priceGradientMedium';
+            return 'priceGradientHigh';
+        }
+
+        // Period selector
+        function setArbitragePeriod(period) {
+            currentPeriod = period;
+            
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`period-${period}`).classList.add('active');
+            
+            const labels = {
+                '4h': '4-HOUR',
+                '24h': '24-HOUR',
+                '7d': '7-DAY',
+                '30d': 'MONTHLY',
+                '1y': 'YEARLY'
+            };
+            document.getElementById('arbitrageTimeLabel').textContent = labels[period] || '4-HOUR';
+            
+            if (period !== '4h') {
+                document.getElementById('arbitrageDetails').innerHTML = `
+                    <div style="color: rgba(255, 255, 255, 0.5);">
+                        ${labels[period]} view coming soon...
+                    </div>
+                `;
+            } else if (window.lastArbitrageData) {
+                displayArbitrageOpportunities(window.lastArbitrageData);
+            }
+        }
+
+        // Fetch and update data
+        async function refreshData() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                currentData = data;
+                updateVisualization(data);
+                document.getElementById('lastUpdateTime').textContent = new Date().toLocaleTimeString('en-AU', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    hour12: false 
+                });
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleTimeString('en-AU', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        // Animate flow particles
+        function animateFlowParticles() {
+            const connections = [
+                ['QLD1', 'NSW1'],
+                ['NSW1', 'VIC1'],
+                ['VIC1', 'SA1']
+            ];
+            
+            connections.forEach(([from, to], index) => {
+                setTimeout(() => {
+                    createFlowParticle(from, to);
+                    setInterval(() => createFlowParticle(from, to), 5000 + index * 500);
+                }, index * 1500);
+            });
+        }
+        
+        function createFlowParticle(from, to) {
+            const fromPos = statePositions[from];
+            const toPos = statePositions[to];
+            const container = document.getElementById('flowParticles');
+            
+            const particle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            particle.setAttribute('class', 'flow-particle');
+            particle.setAttribute('cx', fromPos.x);
+            particle.setAttribute('cy', fromPos.y);
+            particle.setAttribute('r', '4');
+            particle.setAttribute('fill', '#21E490');
+            particle.style.filter = 'drop-shadow(0 0 8px rgba(33, 228, 144, 0.9))';
+            
+            container.appendChild(particle);
+            
+            // Animate particle movement
+            const duration = 3500;
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Use easing for smoother animation
+                const easeProgress = progress < 0.5 
+                    ? 2 * progress * progress 
+                    : -1 + (4 - 2 * progress) * progress;
+                
+                const x = fromPos.x + (toPos.x - fromPos.x) * easeProgress;
+                const y = fromPos.y + (toPos.y - fromPos.y) * easeProgress;
+                
+                particle.setAttribute('cx', x);
+                particle.setAttribute('cy', y);
+                particle.setAttribute('r', 3);
+                particle.style.opacity = 0.8;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    container.removeChild(particle);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Initialize
+        function init() {
+            drawStates();
+            drawInterconnectors();
+            animateFlowParticles();
+            refreshData();
+            updateTime();
+            setInterval(updateTime, 1000);
+            setInterval(refreshData, 60000);
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

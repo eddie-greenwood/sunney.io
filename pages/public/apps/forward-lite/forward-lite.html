@@ -1,0 +1,2471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="description" content="LéTool - Institutional BESS analytics and annual revenue comparison for investment banking workflows">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>LéTool | Institutional BESS Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Premium Luxury Palette */
+            --premium-gold: #D4AF37;
+            --premium-gold-light: #F4E4BC;
+            --premium-gold-dark: #B8941F;
+            --greenwood-primary: #00E87E;
+            --greenwood-dark: #00A55A;
+            --greenwood-light: #00FF8C;
+            --greenwood-accent: #00C86A;
+            --dark-bg: #050505;
+            --card-bg: rgba(10, 10, 10, 0.95);
+            --card-border: rgba(100, 116, 139, 0.15);
+            --border-light: rgba(100, 116, 139, 0.2);
+            --text-primary: #ffffff;
+            --text-secondary: #a8a8a8;
+            --text-muted: #707070;
+            --neutral-accent: #64748b;
+            --neutral-light: #94a3b8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Green glow overlay matching index.html */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 232, 126, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 50%, rgba(0, 232, 126, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 232, 126, 0.03) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .main-wrapper {
+            position: relative;
+            z-index: 2; /* Above overlay */
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            position: relative;
+        }
+        
+        .header-left, .header-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .header-center {
+            flex: 2;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .header-left {
+            justify-content: flex-start;
+        }
+        
+        .header-right {
+            justify-content: flex-end;
+        }
+        
+        .logo { display: flex; flex-direction: column; }
+        .status-indicator { display: inline-flex; align-items: center; gap: 10px; padding: 6px 12px; background: rgba(0, 232, 126, 0.1); border: 1px solid rgba(0, 232, 126, 0.3); border-radius: 20px; }
+        .status-light { width: 8px; height: 8px; background: var(--greenwood-primary); border-radius: 50%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .status-text { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-metrics { display: flex; gap: 32px; align-items: center; }
+        .metric-badge { display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .metric-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 4px; opacity: 0.7; }
+        .metric-value { font-size: 18px; font-weight: 600; color: var(--greenwood-light); }
+        
+        /* Responsive header for mobile */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                padding: 15px 0;
+            }
+            .header-left, .header-center, .header-right {
+                flex: none;
+                width: 100%;
+                justify-content: center;
+            }
+            .header-center h1 {
+                font-size: 32px !important;
+            }
+        }
+        
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+        
+        .controls {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--card-border);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .control-group label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        
+        .control-group select,
+        .control-group input {
+            padding: 10px 12px;
+            background: #0f0f0f;
+            border: 1px solid var(--card-border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .control-group select:focus,
+        .control-group input:focus {
+            outline: none;
+            border-color: var(--greenwood-primary);
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+        }
+        
+        .control-group input[type="number"] {
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        
+        .control-group input::-webkit-outer-spin-button,
+        .control-group input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .btn-group {
+            grid-column: span 2;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+        
+        .btn { background: var(--greenwood-primary); color: #ffffff; border: none; padding: 10px 18px; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; text-transform: none; }
+        
+        .btn:hover {
+            background: var(--greenwood-accent);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        /* Removed cyberpunk/glitch effects for professional look */
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--greenwood-primary);
+            border: 2px solid var(--greenwood-primary);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(0, 232, 126, 0.1);
+        }
+        
+        .expert-toggle {
+            grid-column: span 2;
+            padding: 10px;
+            background: rgba(0, 232, 126, 0.05);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+        
+        .expert-toggle:hover {
+            background: rgba(0, 232, 126, 0.1);
+        }
+        
+        /* Control Panel Styles */
+        .control-panel {
+            background: #141414;
+            border-radius: 20px;
+            margin: 25px auto;
+            max-width: 1400px;
+            border: 1px solid #1a1a1a;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .control-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 10%, rgba(100, 116, 139, 0.3) 50%, transparent 90%);
+        }
+        
+        .control-panel .control-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        .control-panel .control-section {
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            padding: 0;
+            margin-bottom: 25px;
+        }
+        
+        .control-panel .control-section h4 {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--greenwood-primary);
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        .control-panel .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+        
+        .control-panel .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 68px;
+        }
+        
+        .control-panel .control-group label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: 0;
+            min-height: 16px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .control-panel .control-group input,
+        .control-panel .control-group select {
+            background: #1a1a1a;
+            border: 2px solid #1a1a1a;
+            color: var(--text-primary);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            width: 100%;
+            height: 42px;
+            box-sizing: border-box;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+        
+        .control-panel .control-group select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300E87E' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            padding-right: 36px;
+        }
+        
+        .control-panel .control-group input:focus,
+        .control-panel .control-group select:focus {
+            outline: none;
+            border-color: var(--greenwood-primary);
+            background: rgba(0, 232, 126, 0.05);
+            box-shadow: 0 0 20px rgba(0, 232, 126, 0.2);
+        }
+        
+        .control-panel .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr 2fr;
+            gap: 15px;
+            margin: 0;
+            padding: 30px;
+            padding-top: 0;
+            background: transparent;
+            border-radius: 0;
+            border: none;
+        }
+        
+        .btn-scenario {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: transparent;
+            border: 2px solid var(--greenwood-primary);
+            color: var(--greenwood-primary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: none;
+            letter-spacing: 0;
+            font-weight: 600;
+        }
+        
+        .btn-scenario:hover {
+            background: var(--greenwood-primary);
+            color: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 232, 126, 0.4);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid #333;
+            color: var(--text-secondary);
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 10px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--greenwood-primary);
+            color: var(--greenwood-primary);
+            background: rgba(0, 232, 126, 0.05);
+        }
+        
+        .btn-primary {
+            background: var(--greenwood-primary);
+            color: #000;
+            font-weight: 600;
+            padding: 12px 32px;
+            font-size: 15px;
+            border: none;
+            box-shadow: 0 5px 20px rgba(0, 232, 126, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 232, 126, 0.4);
+        }
+        
+        .expert-options {
+            display: none;
+            grid-column: span 2;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            gap: 10px;
+        }
+        
+        .expert-options.show {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .chart-container {
+            background: #141414;
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid #1a1a1a;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+            position: relative;
+        }
+        
+        .chart-title {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            color: var(--text-primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--greenwood-primary);
+            display: inline-block;
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+        
+        .chart-wrapper.large {
+            height: 650px;
+        }
+        
+        .chart-wrapper.small {
+            height: 400px;
+        }
+        
+        .stats-table {
+            background: #141414;
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            border: 1px solid #1a1a1a;
+            overflow-x: auto;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid var(--greenwood-primary);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+        
+        tr:hover td {
+            background: rgba(0, 232, 126, 0.03);
+        }
+        
+        tr:hover {
+            background: rgba(76, 175, 80, 0.06);
+            cursor: pointer;
+        }
+        
+        .value-highlight {
+            color: var(--greenwood-primary);
+            font-weight: 600;
+        }
+        
+        .drill-in {
+            position: fixed;
+            top: 0;
+            right: -600px;
+            width: 600px;
+            height: 100vh;
+            background: #141414;
+            border-left: 1px solid #1a1a1a;
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 30px;
+            box-shadow: 
+                -10px 0 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+        }
+        
+        .drill-in.open {
+            right: 0;
+        }
+        
+        .drill-in-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .drill-in-title {
+            font-size: 1.3rem;
+            color: var(--greenwood-primary);
+        }
+        
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .close-btn:hover {
+            color: var(--greenwood-primary);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--greenwood-primary);
+        }
+        
+        .spinner {
+            border: 3px solid rgba(0, 232, 126, 0.1);
+            border-top: 3px solid var(--greenwood-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateX(100px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0);
+            }
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .nav-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: var(--greenwood-primary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: opacity 0.3s;
+        }
+        
+        .nav-link:hover {
+            opacity: 0.8;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid var(--card-border);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-light);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .card-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .card-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+        
+        .card-unit {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        .calibration-chip {
+            background: #141414;
+            border: 1px solid #1a1a1a;
+            border-radius: 20px;
+            padding: 12px 24px;
+            font-size: 0.85rem;
+            color: var(--greenwood-primary);
+            margin: 25px auto;
+            display: block;
+            text-align: center;
+            max-width: fit-content;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+        }
+        
+        .info-btn {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            padding: 6px 10px;
+            height: auto;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .info-btn:hover {
+            border-color: var(--greenwood-primary);
+            color: var(--greenwood-primary);
+            transform: translateY(-1px);
+        }
+        
+        .methodology-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            color: var(--neutral-light);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            z-index: 100;
+            opacity: 0.7;
+        }
+        
+        .methodology-btn:hover {
+            opacity: 1;
+            background: rgba(0, 0, 0, 0.8);
+            border-color: var(--greenwood-primary);
+            color: var(--greenwood-primary);
+            transform: translateY(-2px);
+        }
+        
+        .settings-btn {
+            background: transparent;
+            border: 1px solid rgba(0, 232, 126, 0.3);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 45px;
+            height: 45px;
+            margin-left: 10px;
+        }
+        
+        .settings-btn:hover {
+            background: rgba(76, 175, 80, 0.08);
+            border-color: var(--greenwood-primary);
+            transform: rotate(90deg);
+        }
+        
+        .settings-menu {
+            position: absolute;
+            right: 20px;
+            top: 60px;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            border: 1px solid var(--greenwood-primary);
+            border-radius: 10px;
+            padding: 10px 0;
+            min-width: 150px;
+            box-shadow: 0 4px 12px rgba(0, 232, 126, 0.2);
+            z-index: 1000;
+        }
+        
+        .settings-item {
+            padding: 10px 20px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+        
+        .settings-item:hover {
+            background: rgba(0, 232, 126, 0.1);
+            color: var(--greenwood-primary);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: #141414;
+            margin: 2% auto;
+            padding: 40px;
+            border: 1px solid #1a1a1a;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalFadeIn 0.3s ease;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 0 60px rgba(0, 232, 126, 0.05);
+        }
+        
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-close {
+            color: var(--text-secondary);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .modal-close:hover {
+            color: var(--greenwood-primary);
+        }
+        
+        .modal h2 {
+            color: var(--greenwood-primary);
+            margin-bottom: 30px;
+            font-size: 2rem;
+            text-align: center;
+        }
+        
+        .info-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #141414;
+            border-radius: 20px;
+            border: 1px solid #1a1a1a;
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.3),
+                0 0 30px rgba(0, 232, 126, 0.02);
+        }
+        
+        .info-section h3 {
+            color: var(--greenwood-primary);
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .info-section p {
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        
+        .info-section ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .info-section li {
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .timeline-item {
+            margin: 20px 0;
+            padding: 20px;
+            background: #141414;
+            border-radius: 20px;
+            border: 1px solid #1a1a1a;
+            border-left: 3px solid var(--greenwood-accent);
+            box-shadow: 
+                0 5px 20px rgba(0, 0, 0, 0.2),
+                0 0 20px rgba(0, 232, 126, 0.01);
+        }
+        
+        .year-badge {
+            background: var(--greenwood-primary);
+            color: var(--dark-bg);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        .impact {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            color: #ffa500;
+        }
+        
+        .formula {
+            background: rgba(0, 232, 126, 0.1);
+            border: 1px solid var(--greenwood-primary);
+            padding: 15px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1.1rem;
+            text-align: center;
+            color: var(--greenwood-primary);
+            margin: 20px 0;
+        }
+        
+        .warning-box {
+            background: #141414;
+            border: 1px solid #1a1a1a;
+            padding: 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            box-shadow: 
+                0 5px 20px rgba(0, 0, 0, 0.2),
+                0 0 20px rgba(255, 165, 0, 0.02);
+        }
+        
+        .warning-box p {
+            margin-bottom: 15px;
+        }
+        
+        .cta {
+            background: linear-gradient(135deg, var(--greenwood-primary), var(--greenwood-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: center;
+            margin-top: 20px;
+        }
+        
+        /* Desktop - 4 columns for better alignment */
+        @media (min-width: 1200px) {
+            .controls {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        /* Tablet - 3 columns */
+        @media (min-width: 768px) and (max-width: 1199px) {
+            .controls {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            /* Control Panel Mobile Optimizations */
+            .control-panel .control-grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .control-panel [style*="grid-template-columns: 1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .control-panel [style*="grid-template-columns: 1fr 1fr 2fr"] {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .control-panel .controls {
+                grid-template-columns: 1fr !important;
+            }
+            
+            .control-panel .control-group {
+                width: 100%;
+            }
+            
+            .control-panel .control-group[style*="grid-column: span 2"] {
+                grid-column: span 1 !important;
+            }
+            
+            .control-panel input[type="number"],
+            .control-panel select {
+                width: 100%;
+                padding: 12px;
+                font-size: 16px;
+                height: 44px;
+            }
+            
+            .control-panel label {
+                font-size: 12px;
+                margin-bottom: 8px;
+            }
+            
+            .control-panel h4 {
+                font-size: 10px !important;
+            }
+            
+            .control-panel button {
+                width: 100%;
+                padding: 16px !important;
+                font-size: 14px !important;
+            }
+            
+            .control-panel > div[style*="padding: 20px"] {
+                padding: 12px !important;
+            }
+            
+            .control-panel > div[style*="padding: 24px"] {
+                padding: 16px !important;
+            }
+            
+            .control-panel .btn {
+                margin-bottom: 8px;
+            }
+            
+            /* Scenario buttons mobile */
+            .control-panel .scenario-buttons {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            
+            .control-panel .scenario-buttons span {
+                margin-bottom: 12px;
+                text-align: center;
+                display: block;
+            }
+            
+            .control-panel .scenario-buttons button {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                margin-bottom: 20px;
+                padding: 24px 16px !important;
+                gap: 16px !important;
+            }
+            
+            .header-left {
+                flex-direction: column !important;
+                gap: 12px !important;
+                align-items: center;
+                text-align: center;
+                width: 100%;
+            }
+            
+            .header-metrics {
+                flex-direction: column;
+                gap: 12px !important;
+                width: 100%;
+                justify-content: center;
+                align-items: center;
+            }
+            
+            .metric-badge {
+                padding: 12px;
+                width: 100%;
+                text-align: center;
+            }
+            
+            .header h1,
+            .logo h1 {
+                font-size: 24px !important;
+            }
+            
+            .header .subtitle {
+                font-size: 10px !important;
+            }
+            
+            .status-indicator {
+                padding: 6px 12px !important;
+            }
+            
+            .status-text {
+                font-size: 10px !important;
+            }
+            
+            .header p {
+                font-size: 0.9rem;
+            }
+            
+            .info-btn {
+                padding: 10px 16px !important;
+                font-size: 11px !important;
+                width: 100%;
+                margin-top: 12px;
+                position: static !important;
+            }
+            
+            .methodology-btn {
+                top: 10px;
+                right: 10px;
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+            
+            .nav-link {
+                font-size: 0.8rem;
+                top: 10px;
+                left: 10px;
+            }
+            
+            .control-panel {
+                padding: 0;
+                margin: 16px 0;
+            }
+            
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .control-group label {
+                font-size: 0.75rem;
+            }
+            
+            .control-group select,
+            .control-group input {
+                padding: 8px 10px;
+                font-size: 14px;
+            }
+            
+            .btn-group {
+                grid-column: span 1;
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 13px;
+                width: 100%;
+            }
+            
+            .expert-toggle {
+                grid-column: span 1;
+                padding: 8px;
+                font-size: 0.85rem;
+            }
+            
+            .expert-options {
+                grid-column: span 1;
+                grid-template-columns: 1fr;
+            }
+            
+            .expert-options.show {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .chart-title {
+                font-size: 1rem;
+                margin-bottom: 15px;
+            }
+            
+            .chart-wrapper {
+                height: 400px;
+            }
+            
+            .chart-wrapper.large {
+                height: 500px;
+            }
+            
+            .chart-wrapper.small {
+                height: 350px;
+            }
+            
+            /* Summary cards in mobile */
+            .card {
+                padding: 15px;
+                min-height: auto;
+            }
+            
+            .card-value {
+                font-size: 1.4rem;
+            }
+            
+            .card-label {
+                font-size: 0.75rem;
+            }
+            
+            .card-unit {
+                font-size: 0.8rem;
+            }
+            
+            /* Table responsive */
+            .stats-table {
+                padding: 15px;
+                overflow-x: auto;
+            }
+            
+            table {
+                font-size: 0.85rem;
+                min-width: 100%;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 0.8rem;
+            }
+            
+            /* Modal responsive */
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+                margin: 5% auto;
+                max-height: 85vh;
+            }
+            
+            .modal h2 {
+                font-size: 1.5rem;
+                margin-bottom: 20px;
+            }
+            
+            .info-section {
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+            
+            .info-section h3 {
+                font-size: 1.1rem;
+            }
+            
+            .info-section p {
+                font-size: 0.9rem;
+            }
+            
+            .timeline-item {
+                padding: 15px;
+                margin: 15px 0;
+            }
+            
+            .year-badge {
+                font-size: 0.8rem;
+                padding: 4px 12px;
+            }
+            
+            .formula {
+                font-size: 0.9rem;
+                padding: 12px;
+            }
+            
+            /* Drill-in drawer */
+            .drill-in {
+                width: 100%;
+                right: -100%;
+                padding: 20px;
+            }
+            
+            .drill-in.open {
+                right: 0;
+            }
+            
+            .drill-in-title {
+                font-size: 1.1rem;
+            }
+            
+            .calibration-chip {
+                font-size: 0.75rem;
+                padding: 6px 12px;
+                margin-bottom: 15px;
+            }
+            
+            /* Hide horizontal scroll */
+            * {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+        }
+        
+        /* Even smaller devices */
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .header p {
+                font-size: 0.8rem;
+                line-height: 1.3;
+            }
+            
+            .controls {
+                padding: 12px;
+            }
+            
+            .control-group select,
+            .control-group input {
+                padding: 10px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            /* Stack the summary boxes in 2x2 grid on very small screens */
+            div[style*="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))"] {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important;
+            }
+            
+            .card {
+                padding: 12px;
+            }
+            
+            .card-value {
+                font-size: 1.2rem;
+            }
+            
+            /* Make buttons more touch-friendly */
+            .btn {
+                padding: 12px;
+                font-size: 14px;
+                min-height: 44px; /* iOS touch target size */
+            }
+            
+            .expert-toggle {
+                min-height: 44px;
+            }
+        }
+        
+        /* Professional info icons with enhanced tooltips */
+        .info-icon {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            line-height: 12px;
+            text-align: center;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid #666;
+            color: #999;
+            font-size: 9px;
+            font-weight: bold;
+            cursor: help;
+            margin-left: 4px;
+            vertical-align: middle;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .info-icon:hover {
+            border-color: #00E87E;
+            color: #00E87E;
+            background: rgba(0, 232, 126, 0.1);
+        }
+        
+        /* Enhanced tooltip styling */
+        .info-icon:hover::after {
+            content: attr(title);
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid #00E87E;
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.4;
+            width: 280px;
+            max-width: 280px;
+            white-space: normal;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 232, 126, 0.2);
+        }
+        
+        .info-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid #00E87E;
+            z-index: 1001;
+        }
+        
+        /* Covenant boxes */
+        .covenant-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .covenant-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .covenant-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        
+        .covenant-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .covenant-status.pass {
+            background: rgba(0, 232, 126, 0.2);
+            color: #00E87E;
+        }
+        
+        .covenant-status.warning {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .covenant-status.breach {
+            background: rgba(220, 38, 38, 0.2);
+            color: #dc2626;
+        }
+        
+        /* Clean professional buttons */
+        .scenario-buttons button {
+            flex: 1;
+            min-width: 120px;
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: #fff;
+            border-radius: 20px; /* Pill */
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-transform: none;
+        }
+        
+        .scenario-buttons button:hover {
+            background: #1b1b1b !important;
+            border-color: var(--greenwood-primary) !important;
+            transform: translateY(-1px);
+        }
+        
+        .scenario-buttons button:active {
+            background: var(--greenwood-primary) !important;
+            color: #000 !important;
+            transform: translateY(0);
+        }
+        
+        /* Ticker Styles */
+        #tickerInner {
+            animation: scroll 30s linear infinite;
+        }
+        
+        @keyframes scroll {
+            from { 
+                transform: translateX(0); 
+            }
+            to { 
+                transform: translateX(-33.33%); 
+            }
+        }
+        
+        .ticker-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0 10px;
+            white-space: nowrap;
+        }
+        
+        .ticker-region {
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .ticker-price {
+            font-weight: 500;
+            color: var(--greenwood-light);
+        }
+        
+        .ticker-change {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        
+        .ticker-change.positive {
+            background: rgba(0, 232, 126, 0.2);
+            color: var(--greenwood-primary);
+        }
+        
+        .ticker-change.negative {
+            background: rgba(255, 77, 77, 0.2);
+            color: #ff4d4d;
+        }
+        
+        .ticker-separator {
+            color: #444;
+            margin: 0 5px;
+        }
+        
+        /* Footer styles */
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 60px;
+            padding: 30px 20px;
+            font-size: 0.95rem;
+            background: linear-gradient(180deg, transparent 0%, rgba(20, 20, 20, 0.8) 50%, #141414 100%);
+            border-top: 1px solid rgba(0, 232, 126, 0.1);
+            position: relative;
+        }
+        
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 10%;
+            right: 10%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, var(--greenwood-primary) 50%, transparent 100%);
+            opacity: 0.3;
+        }
+        
+        .footer a {
+            color: var(--greenwood-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+            color: var(--greenwood-light);
+        }
+        
+        .footer-logo {
+            height: 40px;
+            opacity: 0.7;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 2px 4px rgba(0, 232, 126, 0.2));
+        }
+        
+        /* Cash Flow Table Styles */
+        #cashFlowTable tbody tr {
+            background: #141414;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        
+        #cashFlowTable tbody tr:hover {
+            background: rgba(0, 232, 126, 0.05);
+        }
+        
+        #cashFlowTable tbody tr:nth-child(even) {
+            background: #181818;
+        }
+        
+        #cashFlowTable tbody tr:nth-child(even):hover {
+            background: rgba(0, 232, 126, 0.05);
+        }
+        
+        #cashFlowTable td {
+            padding: 10px 8px;
+            border-right: 1px solid #1a1a1a;
+        }
+        
+        #cashFlowTable td:last-child {
+            border-right: none;
+        }
+        
+        .negative-value {
+            color: #ff4d4d !important;
+        }
+        
+        .positive-value {
+            color: var(--greenwood-primary) !important;
+        }
+        
+        .warning-value {
+            color: #ffa500 !important;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="nav-link">← Back to Main</a>
+    <button class="methodology-btn" onclick="showInfoModal()" title="Model Methodology & Calculations">📐 Methodology</button>
+
+    <div class="main-wrapper">
+    <div class="header">
+        <div class="header-left">
+            <img src="GreenwoodEnergy Logoo.svg" alt="Greenwood Energy" style="height: 65px; filter: drop-shadow(0 4px 10px rgba(0, 232, 126, 0.25));">
+        </div>
+        
+        <div class="header-center">
+            <div class="logo">
+                <h1 style="font-size: 42px; font-weight: 300; letter-spacing: -1px; margin: 0;">
+                    <span style="background: linear-gradient(135deg, var(--greenwood-primary) 0%, var(--greenwood-light) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Lé</span><span style="font-weight: 600; color: #ffffff;">Tool</span>
+                </h1>
+                <div class="subtitle" style="font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 3px; margin-top: 5px; opacity: 0.8;">
+                    INSTITUTIONAL BESS ANALYTICS
+                </div>
+            </div>
+            <div class="header-metrics" style="display: flex; gap: 40px; margin-top: 15px; justify-content: center;">
+                <div class="metric-badge">
+                    <div class="metric-label">MODEL</div>
+                    <div class="metric-value" style="font-size: 20px; color: var(--greenwood-primary); font-weight: 600;">v2.1.4</div>
+                </div>
+                <div class="metric-badge">
+                    <div class="metric-label">STATUS</div>
+                    <div class="metric-value" style="font-size: 20px; color: var(--greenwood-light); font-weight: 600;">LIVE</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <div class="status-indicator" style="padding: 12px 24px; background: rgba(0, 232, 126, 0.1); border: 1px solid rgba(0, 232, 126, 0.3); border-radius: 30px;">
+                <span class="status-light"></span>
+                <span class="status-text" style="font-size: 12px; font-weight: 600; letter-spacing: 1px;">AURORA DATA • NOV 2024</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Price Ticker -->
+    <div id="livePriceTicker" style="
+        background: linear-gradient(90deg, #141414 0%, #1a1a1a 50%, #141414 100%);
+        padding: 8px 0;
+        border-bottom: 1px solid var(--greenwood-primary);
+        margin-bottom: 25px;
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: 35px;
+        font-size: 13px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    ">
+        <div style="
+            padding: 0 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 232, 126, 0.1);
+            border-right: 1px solid var(--greenwood-primary);
+            z-index: 10;
+            position: relative;
+            flex-shrink: 0;
+        ">
+            <span style="
+                font-weight: 600;
+                color: var(--greenwood-primary);
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            ">
+                <span style="
+                    display: inline-block;
+                    width: 8px;
+                    height: 8px;
+                    background: var(--greenwood-primary);
+                    border-radius: 50%;
+                    animation: pulse 2s infinite;
+                "></span>
+                LIVE
+            </span>
+        </div>
+        <div id="tickerContent" style="
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        ">
+            <div id="tickerInner" style="
+                display: inline-flex;
+                gap: 25px;
+                padding: 0 20px;
+                white-space: nowrap;
+            ">
+                <!-- Price items will be inserted here -->
+            </div>
+        </div>
+        <span id="lastUpdate" style="
+            font-size: 11px;
+            color: #999;
+            margin: 0 15px;
+            flex-shrink: 0;
+        "></span>
+    </div>
+    
+<!-- Complete Fixed Control Panel -->
+<div class="control-panel">
+    <div class="control-header" style="padding: 30px; padding-bottom: 0;">
+        <h3 style="color: var(--text-primary); font-size: 1.4rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid var(--greenwood-primary); padding-bottom: 8px; display: inline-block; margin-bottom: 25px;">Configuration Dashboard</h3>
+    </div>
+    
+    <!-- Scenario Selection -->
+    <div style="padding: 0 30px 20px;">
+        <div class="scenario-buttons" style="display: flex; gap: 15px; align-items: center; justify-content: center;">
+            <span style="color: var(--text-secondary); font-size: 0.95rem; font-weight: 500;">Quick Scenarios:</span>
+            <button class="btn-scenario" onclick="loadScenario('conservative', event)">Conservative</button>
+            <button class="btn-scenario" onclick="loadScenario('base', event)">Base Case</button>
+            <button class="btn-scenario" onclick="loadScenario('aggressive', event)">Aggressive</button>
+            <button class="btn-settings" onclick="openScenarioSettings()" style="background: transparent; border: 1px solid #1a1a1a; padding: 8px; border-radius: 8px; cursor: pointer; margin-left: 10px; transition: all 0.3s ease;" onmouseover="this.style.borderColor='#00E87E'; this.style.transform='rotate(90deg)'" onmouseout="this.style.borderColor='#1a1a1a'; this.style.transform='rotate(0deg)'">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 15.5C13.933 15.5 15.5 13.933 15.5 12C15.5 10.067 13.933 8.5 12 8.5C10.067 8.5 8.5 10.067 8.5 12C8.5 13.933 10.067 15.5 12 15.5Z" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M20.5 12C20.5 11.4477 20.9477 11 21.5 11C22.0523 11 22.5 11.4477 22.5 12C22.5 12.5523 22.0523 13 21.5 13C20.9477 13 20.5 12.5523 20.5 12Z" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M1.5 12C1.5 11.4477 1.94772 11 2.5 11C3.05228 11 3.5 11.4477 3.5 12C3.5 12.5523 3.05228 13 2.5 13C1.94772 13 1.5 12.5523 1.5 12Z" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M12 1.5C11.4477 1.5 11 1.94772 11 2.5C11 3.05228 11.4477 3.5 12 3.5C12.5523 3.5 13 3.05228 13 2.5C13 1.94772 12.5523 1.5 12 1.5Z" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M12 20.5C11.4477 20.5 11 20.9477 11 21.5C11 22.0523 11.4477 22.5 12 22.5C12.5523 22.5 13 22.0523 13 21.5C13 20.9477 12.5523 20.5 12 20.5Z" stroke="#94a3b8" stroke-width="1.5"/>
+                    <path d="M18.5 5.5L17.5 6.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M6.5 17.5L5.5 18.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M5.5 5.5L6.5 6.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M17.5 17.5L18.5 18.5" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+    
+    <div class="control-grid">
+        
+        <!-- Left Column -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <!-- System Configuration -->
+            <div class="control-section">
+                <h4>System Configuration</h4>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="region">Region</label>
+                        <select id="region">
+                            <option value="NSW1">NSW</option>
+                            <option value="VIC1" selected>VIC</option>
+                            <option value="QLD1">QLD</option>
+                            <option value="SA1">SA</option>
+                            <option value="TAS1">TAS</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="duration">Duration</label>
+                        <select id="duration">
+                            <option value="0.5">30 min</option>
+                            <option value="1">1 hour</option>
+                            <option value="2">2 hour</option>
+                            <option value="4" selected>4 hour</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="mwsize">MW Size</label>
+                        <input type="number" id="mwsize" value="5" min="0.5" max="1000" step="0.5">
+                    </div>
+                    <div class="control-group">
+                        <label for="efficiency">RTE (%)</label>
+                        <input type="number" id="efficiency" value="88" min="70" max="98" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="cycles">Cycles/Day</label>
+                        <input type="number" id="cycles" value="1.3" min="0.2" max="2.0" step="0.1">
+                    </div>
+                    <div class="control-group">
+                        <label for="availability">Availability (%)</label>
+                        <input type="number" id="availability" value="96" min="80" max="100" step="1">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Financial Parameters -->
+            <div class="control-section">
+                <h4>Financial Parameters</h4>
+                <div class="controls">
+                    <div class="control-group" style="grid-column: span 2;">
+                        <label for="buildcost">Build Cost ($M)</label>
+                        <select id="buildcost">
+                            <option value="4">$4.0M</option>
+                            <option value="4.5">$4.5M</option>
+                            <option value="5">$5.0M</option>
+                            <option value="5.5">$5.5M</option>
+                            <option value="6">$6.0M</option>
+                            <option value="6.5">$6.5M</option>
+                            <option value="7">$7.0M</option>
+                            <option value="7.5">$7.5M</option>
+                            <option value="8" selected>$8.0M</option>
+                            <option value="8.5">$8.5M</option>
+                            <option value="9">$9.0M</option>
+                            <option value="9.5">$9.5M</option>
+                            <option value="10">$10.0M</option>
+                            <option value="11">$11.0M</option>
+                            <option value="12">$12.0M</option>
+                            <option value="13">$13.0M</option>
+                            <option value="14">$14.0M</option>
+                            <option value="15">$15.0M</option>
+                            <option value="20">$20.0M</option>
+                            <option value="25">$25.0M</option>
+                            <option value="30">$30.0M</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="cpi">CPI (%/yr)</label>
+                        <input type="number" id="cpi" value="3.1" min="0" max="10" step="0.1">
+                    </div>
+                    <div class="control-group">
+                        <label for="opex">OPEX (%capex/yr)</label>
+                        <input type="number" id="opex" value="0.1" min="0" max="10" step="0.1">
+                    </div>
+                    <div class="control-group">
+                        <label for="degradation">Degradation (%/yr)</label>
+                        <input type="number" id="degradation" value="0.5" min="0" max="5" step="0.1">
+                    </div>
+                    <div class="control-group" style="grid-column: span 2;">
+                        <label for="fcas">FCAS Revenue (%)</label>
+                        <input type="number" id="fcas" value="5" min="0" max="100" step="5">
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Right Column -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <!-- Debt Structure -->
+            <div class="control-section">
+                <h4>Debt Structure</h4>
+                <div class="controls">
+                    <div class="control-group" style="grid-column: span 2;">
+                        <label for="debtStructure">Debt Structure</label>
+                        <select id="debtStructure" onchange="updateDebtStructure()">
+                            <option value="vanilla">Vanilla Senior Debt (65% @ 6.5%)</option>
+                            <option value="mezz">Senior + Mezzanine (55% + 15% @ 6% + 10%)</option>
+                            <option value="holdco">HoldCo PIK Toggle (70% @ 7.5% PIK)</option>
+                            <option value="green">Green Bond + Tax Equity (60% @ 4.5% + ITC)</option>
+                            <option value="construction">Construction + Term (80% @ 5.5% + 6.5%)</option>
+                            <option value="portfolio">Portfolio Financing (75% @ 5.8%)</option>
+                            <option value="yieldco">YieldCo Structure (80% @ 5.2%)</option>
+                            <option value="custom">Custom Structure</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="debtRatio">Debt Ratio (%)</label>
+                        <input type="number" id="debtRatio" value="65" min="0" max="85" step="5">
+                    </div>
+                    <div class="control-group">
+                        <label for="interestRate">Interest Rate (%)</label>
+                        <input type="number" id="interestRate" value="6.0" min="0" max="15" step="0.5">
+                    </div>
+                    <div class="control-group">
+                        <label for="dscrTarget">Target DSCR</label>
+                        <input type="number" id="dscrTarget" value="1.35" min="1.0" max="2.0" step="0.05">
+                    </div>
+                    <div class="control-group">
+                        <label for="loanTerm">Loan Term (years)</label>
+                        <input type="number" id="loanTerm" value="10" min="5" max="20" step="1">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Advanced Parameters -->
+            <div class="control-section">
+                <h4>Advanced Parameters</h4>
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="mlfFactor">MLF Factor</label>
+                        <input type="number" id="mlfFactor" value="0.98" min="0.85" max="1.05" step="0.01">
+                    </div>
+                    <div class="control-group">
+                        <label for="degradationFloor">Degradation Floor (%)</label>
+                        <input type="number" id="degradationFloor" value="80" min="60" max="90" step="5">
+                    </div>
+                    <div class="control-group">
+                        <label for="augmentationYear">Augmentation Year</label>
+                        <input type="number" id="augmentationYear" value="10" min="0" max="15" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="augmentationCost">Augmentation Cost (%)</label>
+                        <input type="number" id="augmentationCost" value="15" min="0" max="50" step="5">
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn-secondary" onclick="resetParameters()">
+            Reset Parameters
+        </button>
+        <button class="btn-secondary" onclick="exportResults()">
+            Export Results
+        </button>
+        <button class="btn-primary" id="analyzeBtn" onclick="analyzeWithAnimation()">
+            ANALYZE MODEL
+        </button>
+    </div>
+</div>
+
+<!-- Expert Options (Hidden by default) -->
+<div class="controls-section" style="margin-top: 20px; display: none;" id="expertOptions">
+    <div class="expert-options">
+        <div class="radio-group">
+            <label>
+                <input type="radio" name="method" value="simple">
+                Simple (√η)
+            </label>
+            <label>
+                <input type="radio" name="method" value="charge" checked>
+                Advanced (H - L/η)
+            </label>
+        </div>
+    </div>
+</div>
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading annual data...</p>
+    </div>
+    
+    <div id="results" style="display: block; opacity: 1; transition: all 0.8s ease-in;">
+        <div class="calibration-chip" id="calibrationChip">
+            <!-- Populated by JS -->
+        </div>
+        
+        <!-- Investment Metrics -->
+        <div class="chart-container" style="background: linear-gradient(145deg, #1a1a1a 0%, #141414 100%); border: 1px solid rgba(212, 175, 55, 0.15);">
+            <h3 style="color: var(--premium-gold); font-size: 1.2rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 25px; padding-bottom: 10px; border-bottom: 2px solid var(--premium-gold); display: inline-block;">Investment Metrics</h3>
+            <div style="padding: 0;">
+                <div id="npv10" style="color: var(--premium-gold-light); font-size: 14px; line-height: 1.8; font-weight: 500; margin-bottom: 10px;">-</div>
+                <div id="buildcostDisplay" style="color: var(--premium-gold); font-size: 12px; margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(212, 175, 55, 0.2); line-height: 1.6;">-</div>
+            </div>
+        </div>
+        
+        <div id="enterpriseValueMetrics" style="margin-bottom: 24px;"></div>
+        
+        <div class="chart-container" style="background: linear-gradient(145deg, rgba(20, 20, 20, 0.98) 0%, rgba(26, 26, 26, 0.95) 100%); border: 1px solid rgba(212, 175, 55, 0.15);">
+            <div style="position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent 10%, rgba(212, 175, 55, 0.3) 50%, transparent 90%);"></div>
+            <h3 class="chart-title" style="color: var(--neutral-light); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 28px;">Risk & Performance Dashboard</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div class="covenant-box" style="border: 2px solid #242424; border-radius: 15px; padding: 20px; background: #1a1a1a; transition: all 0.3s ease; position: relative;">
+                    <div class="covenant-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px;">📈 Debt Coverage (DSCR)</div>
+                    <div class="covenant-value" id="dscrValue" style="font-size: 32px; font-weight: bold; color: #00E87E; margin: 10px 0;">--</div>
+                    <div class="covenant-status" id="dscrStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 6px; display: inline-block;">Loading...</div>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 8px;">Target: ≥1.35x</div>
+                </div>
+                <div class="covenant-box" style="border: 2px solid #242424; border-radius: 15px; padding: 20px; background: #1a1a1a; transition: all 0.3s ease;">
+                    <div class="covenant-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px;">💰 Leverage Ratio</div>
+                    <div class="covenant-value" id="leverageValue" style="font-size: 32px; font-weight: bold; color: #00E87E; margin: 10px 0;">--</div>
+                    <div class="covenant-status" id="leverageStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 6px; display: inline-block;">Loading...</div>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 8px;">Target: ≤65%</div>
+                </div>
+                <div class="covenant-box" style="border: 2px solid #242424; border-radius: 15px; padding: 20px; background: #1a1a1a; transition: all 0.3s ease;">
+                    <div class="covenant-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px;">🎯 Equity IRR (P50)</div>
+                    <div class="covenant-value" id="irrP50Value" style="font-size: 32px; font-weight: bold; color: #00E87E; margin: 10px 0;">--</div>
+                    <div class="covenant-status" id="irrP50Status" style="font-size: 12px; padding: 4px 8px; border-radius: 6px; display: inline-block;">Loading...</div>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 8px;">Target: ≥12%</div>
+                </div>
+                <div class="covenant-box" style="border: 2px solid #242424; border-radius: 15px; padding: 20px; background: #1a1a1a; transition: all 0.3s ease;">
+                    <div class="covenant-label" style="font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; margin-bottom: 8px;">⏱️ Payback Period</div>
+                    <div class="covenant-value" id="paybackValue" style="font-size: 32px; font-weight: bold; color: #00E87E; margin: 10px 0;">--</div>
+                    <div class="covenant-status" id="paybackStatus" style="font-size: 12px; padding: 4px 8px; border-radius: 6px; display: inline-block;">Loading...</div>
+                    <div style="font-size: 10px; color: #6b7280; margin-top: 8px;">Target: ≤7 years</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h3 class="chart-title">Annual Revenue</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartAnnualRevenue"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">🎯 Sensitivity Analysis - Tornado Chart</h3>
+            <div class="chart-wrapper large">
+                <canvas id="chartSensitivity"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">Free Cash Flow Projection</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartCashFlow"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">Monte Carlo Simulation - IRR Distribution
+                <button onclick="exportMonteCarloCSV()" style="float: right; font-size: 12px; padding: 4px 8px; background: var(--greenwood-primary); color: #000; border: none; border-radius: 4px; cursor: pointer;">Export CSV</button>
+            </h3>
+            <div class="chart-wrapper">
+                <canvas id="chartMonteCarlo"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h3 class="chart-title">Cash Waterfall Analysis</h3>
+            <div class="chart-wrapper">
+                <canvas id="chartWaterfall"></canvas>
+            </div>
+        </div>
+
+        <div class="stats-table">
+            <h3 class="chart-title">Annual Statistics</h3>
+            <table id="tblAnnual">
+                <thead>
+                    <tr>
+                        <th>Year</th>
+                        <th>Wholesale</th>
+                        <th>Spread</th>
+                        <th>$/MW-day</th>
+                        <th>$/MW-year</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Scenario Settings Modal -->
+    <div class="modal" id="scenarioSettingsModal" style="display: none;">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="modal-close" onclick="closeScenarioSettings()">&times;</span>
+            <h2 style="color: #D4AF37; margin-bottom: 30px;">⚙️ Configure Scenario Defaults</h2>
+            
+            <div style="display: grid; gap: 30px;">
+                <!-- Conservative Scenario -->
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #242424;">
+                    <h3 style="color: #00E87E; margin-bottom: 20px; font-size: 1.1rem;">Conservative Scenario</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Efficiency (%)</label>
+                            <input type="number" id="conservative_efficiency" value="85" min="70" max="98" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Cycles/Day</label>
+                            <input type="number" id="conservative_cycles" value="1" min="0.5" max="3" step="0.1" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Availability (%)</label>
+                            <input type="number" id="conservative_availability" value="95" min="80" max="100" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">OPEX (%)</label>
+                            <input type="number" id="conservative_opex" value="3" min="0" max="10" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Degradation (%/yr)</label>
+                            <input type="number" id="conservative_degradation" value="0.8" min="0" max="2" step="0.1" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">FCAS (%)</label>
+                            <input type="number" id="conservative_fcas" value="0" min="0" max="50" step="5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Debt Ratio (%)</label>
+                            <input type="number" id="conservative_debtRatio" value="50" min="0" max="85" step="5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Interest Rate (%)</label>
+                            <input type="number" id="conservative_interestRate" value="7.5" min="0" max="15" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Build Cost ($M)</label>
+                            <input type="number" id="conservative_buildcost" value="9" min="1" max="30" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Base Case Scenario -->
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #242424;">
+                    <h3 style="color: #00E87E; margin-bottom: 20px; font-size: 1.1rem;">Base Case Scenario</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Efficiency (%)</label>
+                            <input type="number" id="base_efficiency" value="90" min="70" max="98" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Cycles/Day</label>
+                            <input type="number" id="base_cycles" value="1.5" min="0.5" max="3" step="0.1" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Availability (%)</label>
+                            <input type="number" id="base_availability" value="98" min="80" max="100" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">OPEX (%)</label>
+                            <input type="number" id="base_opex" value="2" min="0" max="10" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Degradation (%/yr)</label>
+                            <input type="number" id="base_degradation" value="0.5" min="0" max="2" step="0.1" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">FCAS (%)</label>
+                            <input type="number" id="base_fcas" value="10" min="0" max="50" step="5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Debt Ratio (%)</label>
+                            <input type="number" id="base_debtRatio" value="60" min="0" max="85" step="5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Interest Rate (%)</label>
+                            <input type="number" id="base_interestRate" value="6.5" min="0" max="15" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Build Cost ($M)</label>
+                            <input type="number" id="base_buildcost" value="8" min="1" max="30" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aggressive Scenario -->
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 15px; border: 1px solid #242424;">
+                    <h3 style="color: #00E87E; margin-bottom: 20px; font-size: 1.1rem;">Aggressive Scenario</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Efficiency (%)</label>
+                            <input type="number" id="aggressive_efficiency" value="93" min="70" max="98" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Cycles/Day</label>
+                            <input type="number" id="aggressive_cycles" value="2" min="0.5" max="3" step="0.1" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Availability (%)</label>
+                            <input type="number" id="aggressive_availability" value="99" min="80" max="100" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">OPEX (%)</label>
+                            <input type="number" id="aggressive_opex" value="1.5" min="0" max="10" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Degradation (%/yr)</label>
+                            <input type="number" id="aggressive_degradation" value="0.3" min="0" max="2" step="0.1" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">FCAS (%)</label>
+                            <input type="number" id="aggressive_fcas" value="20" min="0" max="50" step="5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Debt Ratio (%)</label>
+                            <input type="number" id="aggressive_debtRatio" value="70" min="0" max="85" step="5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Interest Rate (%)</label>
+                            <input type="number" id="aggressive_interestRate" value="5.5" min="0" max="15" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                        <div>
+                            <label style="color: #94a3b8; font-size: 0.85rem;">Build Cost ($M)</label>
+                            <input type="number" id="aggressive_buildcost" value="7" min="1" max="30" step="0.5" style="width: 100%; background: #141414; border: 1px solid #2a2a2a; color: white; padding: 8px; border-radius: 8px;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 15px; justify-content: center; margin-top: 30px;">
+                <button onclick="saveScenarioSettings()" style="background: linear-gradient(135deg, #00E87E, #22C55E); color: black; padding: 12px 30px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer;">Save Settings</button>
+                <button onclick="resetScenarioDefaults()" style="background: #1a1a1a; color: #94a3b8; padding: 12px 30px; border: 1px solid #2a2a2a; border-radius: 10px; font-weight: 600; cursor: pointer;">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div class="modal" id="infoModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeInfoModal()">&times;</span>
+            <h2>📚 Complete Model Documentation & Methodology</h2>
+            
+            <div class="info-section">
+                <h3>🏢 About Aurora Energy Research</h3>
+                <p>Aurora Energy Research is the gold standard for Australian energy market forecasting. Investment banks, major utilities, and renewable developers rely on Aurora's data for billion-dollar investment decisions. Their November 2024 forecast incorporates the latest policy changes, transmission projects, and market dynamics.</p>
+            </div>
+
+            <div class="info-section">
+                <h3>⚡ The Great NEM Transformation (2025-2050)</h3>
+                <p><strong>The numbers tell a dramatic story:</strong> Australia's National Electricity Market is undergoing the most significant transformation in its history. Here's what's driving the volatility you see in the spread charts:</p>
+                
+                <div class="timeline-item">
+                    <span class="year-badge">2025-2030</span>
+                    <strong>The Coal Cliff:</strong>
+                    <ul>
+                        <li>🏭 <strong>Eraring (NSW):</strong> 2.88 GW closing Aug 2025 - Australia's largest coal plant</li>
+                        <li>🏭 <strong>Callide B (QLD):</strong> 700 MW closing 2028</li>
+                        <li>🏭 <strong>Vales Point B (NSW):</strong> 1.32 GW closing 2029</li>
+                        <li>🏭 <strong>Gladstone (QLD):</strong> Units progressively closing from 2029</li>
+                    </ul>
+                    <p class="impact">💥 <strong>Impact:</strong> ~7 GW of 24/7 baseload vanishing. Evening peaks hit $300-500/MWh regularly. Duck curve deepens with solar flooding midday to negative prices. Perfect for 4-hour BESS arbitrage.</p>
+                </div>
+
+                <div class="timeline-item">
+                    <span class="year-badge">2030-2035</span>
+                    <strong>The Transition Valley:</strong>
+                    <ul>
+                        <li>🏭 <strong>Yallourn (VIC):</strong> 1.48 GW closing 2028</li>
+                        <li>🏭 <strong>Bayswater (NSW):</strong> 2.64 GW units start closing 2033</li>
+                        <li>🏭 <strong>Loy Yang A (VIC):</strong> 2.2 GW closure announced for 2035</li>
+                    </ul>
+                    <p class="impact">💥 <strong>Impact:</strong> Spreads temporarily compress as massive utility-scale batteries come online (30+ GWh). But evening demand keeps growing. The smart money is already positioned.</p>
+                </div>
+
+                <div class="timeline-item">
+                    <span class="year-badge">2035-2050</span>
+                    <strong>The Renewable Dominance Era:</strong>
+                    <ul>
+                        <li>📈 Coal completely gone by 2038 (except Mt Piper)</li>
+                        <li>🔋 Over 50 GW of utility solar installed</li>
+                        <li>💨 25+ GW of wind (onshore + offshore)</li>
+                        <li>⚡ Snowy 2.0, HumeLink, Marinus Link all operational</li>
+                    </ul>
+                    <p class="impact">💥 <strong>Impact:</strong> Extreme volatility returns. 6-hour and 8-hour storage becomes critical. Gas peakers hit $15,000/MWh price cap during "dunkelflaute" events (no wind, no sun). That spike in 2050? That's the last gas plants exercising market power.</p>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>📊 Why The Spreads Look "Jumpy"</h3>
+                <p>The scatter in the spread vs wholesale chart isn't random - it's the market responding to massive structural changes:</p>
+                <ul>
+                    <li><strong>2026-2027 NSW spike:</strong> Eraring closure impact before transmission upgrades</li>
+                    <li><strong>2029 volatility:</strong> Multiple closures coinciding, REZ delays</li>
+                    <li><strong>2032 compression:</strong> Kurri Kurri gas + big batteries temporarily oversupply flexibility</li>
+                    <li><strong>2035+ increase:</strong> Electrification demand surge (EVs, heat pumps, hydrogen)</li>
+                    <li><strong>2050 spike:</strong> Final coal gone, gas plants have pricing power before hydrogen takes over</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h3>🎯 How We Capture Value</h3>
+                <p><strong>Aurora Base Case (4h Duration):</strong><br>
+                Storage Spread: $160.5/MWh • Wholesale: $75.9/MWh<br>
+                <em>Forecasts extend to 2050</em></p>
+                <p><strong>The arbitrage calculation uses Aurora's "storage spread" methodology:</strong></p>
+                <ol>
+                    <li><strong>4-hour spread:</strong> Average of top 4 hours minus average of bottom 4 hours each day</li>
+                    <li><strong>Round-trip efficiency:</strong> We apply √η (square root) to split losses between charge/discharge</li>
+                    <li><strong>Cycles per day:</strong> Conservative 1.2 default (many assets achieve 1.5-2.0)</li>
+                    <li><strong>Availability:</strong> 98% uptime (2% for maintenance/outages)</li>
+                </ol>
+                <p class="formula">Daily Revenue = Duration × Spread × √Efficiency × Cycles × MW Size</p>
+            </div>
+
+            <div class="info-section">
+                <h3>⚠️ Critical Insights</h3>
+                <div class="warning-box">
+                    <p><strong>🔴 The Window Is Now:</strong> First-mover advantage is real. Connection points are scarce. MLFs (loss factors) deteriorate as more batteries connect. Environmental approvals take 18-24 months.</p>
+                    <p><strong>🟡 Revenue Stacking Not Included:</strong> These numbers are energy arbitrage ONLY. Add FCAS (frequency control), capacity payments, network services, and synthetic PPAs for full revenue stack.</p>
+                    <p><strong>🟢 Policy Tailwinds:</strong> Capacity Investment Scheme (CIS), Renewable Energy Zones (REZ), and state targets all support storage deployment.</p>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h3>🚀 The Opportunity</h3>
+                <p>Australia needs 40-60 GWh of storage by 2030. Currently has ~3 GWh. Every month of delay is lost revenue. The coal plants WILL close - they're already uneconomic. The only question is: will you capture the arbitrage, or will your competitors?</p>
+                <p class="cta">This tool shows energy arbitrage only. Real projects stack 3-5 revenue streams. The returns you see here are the foundation - not the ceiling.</p>
+            </div>
+
+            <div class="info-section" style="margin-top: 30px;">
+                <h3>📐 Model Methodology & Calculations</h3>
+                
+                <h4 style="color: #00E87E; margin-top: 20px;">1. Revenue Calculation Engine</h4>
+                <div style="background: #141414; padding: 15px; border-radius: 20px; margin: 10px 0; border: 1px solid #1a1a1a; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                    <code style="color: #00E87E;">Daily Revenue = Spread × √RTE × Cycles × MW × Hours × Availability × MLF</code><br>
+                    <code style="color: #00E87E;">Annual Revenue = Daily Revenue × 365 × Degradation × (1 + CPI)^year</code>
+                </div>
+                <ul>
+                    <li><strong>√RTE:</strong> Square root splits efficiency losses equally between charge/discharge</li>
+                    <li><strong>MLF (0.98):</strong> Marginal Loss Factor - you lose 2% to transmission at good locations</li>
+                    <li><strong>Degradation:</strong> Year-by-year capacity decline modeled to 80% floor</li>
+                </ul>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">2. Debt Structure & DSRA</h4>
+                <p><strong>Debt Service Reserve Account (Corrected Implementation):</strong></p>
+                <ul>
+                    <li><strong>Year 1:</strong> Fund 6 months of debt service (one-time cash outflow)</li>
+                    <li><strong>Years 2-9:</strong> Maintain reserve (no annual cash flow)</li>
+                    <li><strong>Year 10:</strong> Release reserve back to equity (cash inflow)</li>
+                    <li><strong>Impact:</strong> Previous error treating as annual expense incorrectly reduced IRR by ~2%</li>
+                </ul>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">3. Terminal Value Approach</h4>
+                <div style="background: #141414; padding: 15px; border-radius: 20px; margin: 10px 0; border: 1px solid #1a1a1a; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                    <code style="color: #00E87E;">Terminal Value = Initial Capex × 15% (scrap/recycling value)</code><br>
+                    <span style="color: #ff6b6b;"><s>NOT Gordon Growth Model (unrealistic for batteries)</s></span>
+                </div>
+                <p>Batteries degrade and get recycled, not sold as going concerns. 15% reflects lithium/cobalt recovery value.</p>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">4. Monte Carlo Simulation (1000 Iterations)</h4>
+                <p><strong>Correlated Variables with Realistic Ranges:</strong></p>
+                <ul>
+                    <li>Spread volatility: ±12% (high market uncertainty)</li>
+                    <li>Efficiency variation: ±2% (tight technical specs)</li>
+                    <li>OPEX uncertainty: ±15% (operational variability)</li>
+                    <li>Cycles variation: ±8% (dispatch uncertainty)</li>
+                    <li>Availability risk: ±2.5% (forced outage rates)</li>
+                </ul>
+                <p><strong>Correlation Matrix:</strong> High spreads → more cycles (ρ=0.5), Low availability → higher OPEX (ρ=0.3)</p>
+                <p><strong>Output:</strong> P10 (~8% IRR) | P50 (~14% IRR) | P90 (~20% IRR)</p>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">5. Enterprise Value (DCF Method)</h4>
+                <div style="background: #141414; padding: 15px; border-radius: 20px; margin: 10px 0; border: 1px solid #1a1a1a; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                    <code style="color: #00E87E;">WACC = (E% × 14%) + (D% × After-Tax Debt Cost) + 1.5% Risk Premium</code><br>
+                    <code style="color: #00E87E;">EV = Σ(Unlevered CF / (1+WACC)^t) + Terminal / (1+WACC)^25</code><br>
+                    <code style="color: #00E87E;">Equity Value = EV - Net Debt</code>
+                </div>
+                <p>14% cost of equity reflects merchant BESS risk, 1.5% premium for uncontracted revenue.</p>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">6. Waterfall Cash Priority</h4>
+                <ol style="background: #141414; padding: 15px; border-radius: 20px; border: 1px solid #1a1a1a; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                    <li>Operating expenses</li>
+                    <li>Senior debt service</li>
+                    <li>DSRA funding/release</li>
+                    <li>Taxes (30% Australian corporate rate)</li>
+                    <li>Equity distributions (residual)</li>
+                </ol>
+                <p style="color: #fbbf24;"><strong>⚠️ Legally enforced order - equity gets paid last!</strong></p>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">7. Risk Covenant Thresholds</h4>
+                <table style="width: 100%; margin: 10px 0;">
+                    <tr><td><strong>DSCR</strong></td><td>≥ 1.35x</td><td>Debt service coverage for lender comfort</td></tr>
+                    <tr><td><strong>Leverage</strong></td><td>≤ 65%</td><td>Maximum for investment grade rating</td></tr>
+                    <tr><td><strong>IRR</strong></td><td>≥ 12%</td><td>Minimum equity return hurdle rate</td></tr>
+                    <tr><td><strong>Payback</strong></td><td>≤ 7 years</td><td>Maximum for institutional investors</td></tr>
+                </table>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">8. Conservative Assumptions</h4>
+                <div style="background: #141414; border: 1px solid #1a1a1a; padding: 15px; border-radius: 20px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2), 0 0 20px rgba(239, 68, 68, 0.01);">
+                    <p><strong>What We DON'T Include (Upside Potential):</strong></p>
+                    <ul>
+                        <li>❌ No capacity expansion despite market growth</li>
+                        <li>❌ No additional grid services beyond 5% FCAS</li>
+                        <li>❌ No renewable certificates or carbon credits</li>
+                        <li>❌ Single augmentation only (could do multiple)</li>
+                        <li>❌ 15% scrap value (could be 20-25%)</li>
+                        <li>❌ No perpetual growth assumption</li>
+                        <li>❌ High WACC for conservatism</li>
+                    </ul>
+                </div>
+
+                <h4 style="color: #00E87E; margin-top: 20px;">9. Base Case Parameters</h4>
+                <div style="background: #141414; padding: 15px; border-radius: 20px; border: 1px solid #1a1a1a; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                    <p><strong>Institutional-Grade Defaults:</strong></p>
+                    <ul style="columns: 2;">
+                        <li>Cycles/Day: 1.3</li>
+                        <li>Degradation: 0.5%/yr</li>
+                        <li>OPEX: 0.1% of capex</li>
+                        <li>CPI: 3.1%</li>
+                        <li>Debt: 65% @ 6%</li>
+                        <li>FCAS: 5% additional</li>
+                        <li>MLF: 0.98</li>
+                        <li>Augmentation: Yr 10 @ 15%</li>
+                        <li>RTE: 88%</li>
+                        <li>Availability: 98%</li>
+                        <li>DSCR Target: 1.35x</li>
+                        <li>Degradation Floor: 80%</li>
+                    </ul>
+                </div>
+
+                <div style="background: #141414; padding: 20px; border-radius: 20px; margin-top: 20px; border: 1px solid #1a1a1a; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 232, 126, 0.01);">
+                    <h4 style="color: #00E87E; margin: 0 0 10px 0;">🎯 Why This Model is Bankable</h4>
+                    <p style="margin: 0;"><strong>Every assumption is defensible to:</strong> Lenders, Rating Agencies, Equity Committees, and Technical Advisors. The 14% P50 IRR with 65% leverage represents market-standard returns for merchant BESS in Australia. This is institutional-grade project finance modeling.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Drill-in drawer for rep day visualization -->
+    <div class="drill-in" id="drillIn">
+        <div class="drill-in-header">
+            <h3 class="drill-in-title" id="drillInTitle">Rep Day</h3>
+            <button class="close-btn" onclick="closeDrillIn()">×</button>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="repDayChart"></canvas>
+        </div>
+        <div style="margin-top: 20px;">
+            <div class="control-group">
+                <label>Day Type</label>
+                <select id="dayType" onchange="updateRepDay()">
+                    <option value="weekday">Weekday</option>
+                    <option value="weekend">Weekend</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    
+    </div>
+    <!-- Year-by-Year Cash Flow Analysis Table -->
+    <div class="chart-container" style="margin-top: 40px; margin-bottom: 40px; overflow-x: auto;">
+        <h3 class="chart-title" style="color: var(--premium-gold); margin-bottom: 25px;">
+            📊 Year-by-Year Cash Flow Analysis
+        </h3>
+        <div style="overflow-x: auto; border-radius: 10px; border: 1px solid #1a1a1a;">
+            <table id="cashFlowTable" style="width: 100%; min-width: 1200px; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border-bottom: 2px solid var(--greenwood-primary);">
+                        <th style="padding: 12px 8px; text-align: center; color: var(--greenwood-primary); font-weight: 600; border-right: 1px solid #2a2a2a;">Year</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">Revenue ($M)</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">OPEX ($M)</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">EBITDA ($M)</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">Debt Service ($M)</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">Tax ($M)</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">Equity CF ($M)</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--text-secondary); font-weight: 600; border-right: 1px solid #2a2a2a;">DSCR</th>
+                        <th style="padding: 12px 8px; text-align: right; color: var(--premium-gold); font-weight: 600;">Cumulative ($M)</th>
+                    </tr>
+                </thead>
+                <tbody id="cashFlowTableBody">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+                <tfoot>
+                    <tr style="background: #1a1a1a; border-top: 2px solid var(--greenwood-primary); font-weight: 600;">
+                        <td style="padding: 12px 8px; color: var(--greenwood-primary); border-right: 1px solid #2a2a2a;">Total</td>
+                        <td id="totalRevenue" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="totalOpex" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="totalEbitda" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="totalDebtService" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="totalTax" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="totalEquityCF" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="avgDSCR" style="padding: 12px 8px; text-align: right; color: var(--greenwood-light); border-right: 1px solid #2a2a2a;">-</td>
+                        <td id="finalCumulative" style="padding: 12px 8px; text-align: right; color: var(--premium-gold); font-weight: 700;">-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <div style="margin-top: 15px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="exportTableToCSV()" style="padding: 8px 20px; background: var(--greenwood-primary); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                Export Table as CSV
+            </button>
+        </div>
+    </div>
+
+    <script src="forward-lite-final.js?v=1.0.6"></script>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <img src="GreenwoodEnergy Logoo.svg" alt="Greenwood Energy" class="footer-logo">
+        <p style="margin-bottom: 10px;">© 2025 Greenwood Energy • <a href="https://greenwood.io" target="_blank">greenwood.io</a></p>
+        <p style="color: var(--greenwood-primary); font-weight: 600;">LéTool v2.1.4 • Institutional BESS Analytics Platform</p>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 10px;">
+            Powered by Aurora Energy Research • Forward Curve Analysis • Monte Carlo Simulation
+        </p>
+    </div>
+</body>
+</html>

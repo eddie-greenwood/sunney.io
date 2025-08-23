@@ -1,0 +1,120 @@
+name: Deploy to Cloudflare
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Auth Worker
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'workers/auth'
+          command: deploy
+          secrets: |
+            JWT_SECRET
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+
+      - name: Deploy API Worker
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'workers/api'
+          command: deploy
+
+      - name: Deploy Scraper Worker
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'workers/scraper'
+          command: deploy
+
+      - name: Deploy Pages
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy pages/public --project-name=sunney-io
+
+      - name: Test Workers (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Running tests..."
+          # Add your test commands here
+
+  test-deployment:
+    needs: deploy
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Test Deployment
+    steps:
+      - name: Wait for deployment
+        run: sleep 30
+
+      - name: Test Auth Worker
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://sunney-auth.eddie-37d.workers.dev/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ Auth worker is healthy"
+          else
+            echo "❌ Auth worker health check failed"
+            exit 1
+          fi
+
+      - name: Test API Worker
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://sunney-api.eddie-37d.workers.dev/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ API worker is healthy"
+          else
+            echo "❌ API worker health check failed"
+            exit 1
+          fi
+
+      - name: Test Scraper Worker
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://sunney-scraper.eddie-37d.workers.dev/health)
+          if [ $response -eq 200 ]; then
+            echo "✅ Scraper worker is healthy"
+          else
+            echo "❌ Scraper worker health check failed"
+            exit 1
+          fi
+
+      - name: Test Pages Deployment
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://sunney-io.pages.dev/)
+          if [ $response -eq 200 ]; then
+            echo "✅ Pages deployment is live"
+          else
+            echo "❌ Pages deployment check failed"
+            exit 1
+          fi

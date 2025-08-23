@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="BESS Trading Simulator - Train for NEM Wholesale Market">
+    <title>BESS Trading Simulator | LeTool</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            color: #00E87E;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .auth-section {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .auth-section input {
+            padding: 10px;
+            background: #1a1a2e;
+            border: 1px solid #00E87E;
+            color: white;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #00E87E;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #00ff8f;
+            transform: translateY(-2px);
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: rgba(0, 232, 126, 0.1);
+            border: 1px solid rgba(0, 232, 126, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00E87E;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-live {
+            background: #00E87E;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .soc-gauge {
+            background: #1a1a2e;
+            border-radius: 8px;
+            height: 40px;
+            position: relative;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .soc-fill {
+            background: linear-gradient(90deg, #00E87E 0%, #00ff8f 100%);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: width 0.5s ease;
+            color: black;
+            font-weight: bold;
+        }
+        
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab-btn {
+            padding: 10px 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+            color: #999;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: rgba(0, 232, 126, 0.2);
+            border-color: #00E87E;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .bidstack-table {
+            width: 100%;
+            margin: 15px 0;
+            border-collapse: collapse;
+        }
+        
+        .bidstack-table th {
+            background: rgba(0, 232, 126, 0.2);
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #00E87E;
+        }
+        
+        .bidstack-table td {
+            padding: 8px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .bidstack-table td[title] {
+            cursor: help;
+        }
+        
+        .bidstack-table input {
+            width: 100%;
+            padding: 5px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 3px;
+        }
+        
+        .bidstack-table input:focus {
+            border-color: #00E87E;
+            outline: none;
+        }
+        
+        .fcas-controls {
+            margin: 20px 0;
+        }
+        
+        .fcas-service {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .fcas-service label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .fcas-service input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        .fcas-service input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .rules-editor {
+            margin-top: 20px;
+        }
+        
+        .rules-editor textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            color: #00E87E;
+            font-family: 'Courier New', monospace;
+            border-radius: 4px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+        
+        th {
+            background: rgba(0, 232, 126, 0.1);
+        }
+        
+        .warning-box {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #ffc107;
+        }
+        
+        .info-box {
+            background: rgba(0, 123, 255, 0.1);
+            border: 1px solid #007bff;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #007bff;
+        }
+        
+        .price-guide {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 0.85rem;
+        }
+        
+        .price-guide h4 {
+            color: #00E87E;
+            margin-bottom: 8px;
+        }
+        
+        .price-guide ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .price-guide li {
+            padding: 3px 0;
+            color: #999;
+        }
+        
+        .price-guide strong {
+            color: #00E87E;
+            margin-right: 8px;
+        }
+        
+        h3 {
+            color: #00E87E;
+            margin: 15px 0 10px 0;
+            font-size: 1.1rem;
+        }
+        
+        .bid-explanation {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            animation: fadeIn 0.3s;
+        }
+        
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2a2a3e 100%);
+            margin: 5% auto;
+            padding: 30px;
+            border: 2px solid #00E87E;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .close-modal {
+            color: #00E87E;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close-modal:hover {
+            color: #00ff8f;
+        }
+        
+        .tutorial-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+        
+        .tutorial-section h3 {
+            color: #00E87E;
+            margin-bottom: 10px;
+        }
+        
+        .example-box {
+            background: rgba(0, 232, 126, 0.1);
+            border: 1px solid #00E87E;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .example-box strong {
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔋 BESS Trading Simulator</h1>
+            <p>5MW/20MWh Virtual Battery | Realistic NEM Operations | Live Competition</p>
+            <button class="btn" onclick="showTutorial()" style="float: right; margin-top: -40px;">📚 How to Trade</button>
+        </header>
+
+        <div class="auth-section" id="authSection">
+            <input type="text" id="username" placeholder="Enter team name">
+            <button class="btn" onclick="login()">Start Trading</button>
+        </div>
+
+        <div id="tradingInterface" style="display: none;">
+            <div class="panel">
+                <h2><span class="status-indicator status-live"></span>Live Market Status <button class="btn" onclick="refreshMarketOnly()" style="float: right; padding: 5px 10px; font-size: 0.9rem;">🔄 Refresh</button></h2>
+                <div style="margin: 15px 0;">
+                    <label for="regionSelector" style="margin-right: 10px;">Select Region:</label>
+                    <select id="regionSelector" onchange="changeRegion()" style="padding: 5px; background: #1a1a2e; color: #00E87E; border: 1px solid #00E87E; border-radius: 4px;">
+                        <option value="VIC1">VIC1 - Victoria</option>
+                        <option value="NSW1">NSW1 - New South Wales</option>
+                        <option value="QLD1">QLD1 - Queensland</option>
+                        <option value="SA1">SA1 - South Australia</option>
+                        <option value="TAS1">TAS1 - Tasmania</option>
+                    </select>
+                    <span id="lastUpdate" style="margin-left: 20px; color: #999; font-size: 0.9rem;"></span>
+                </div>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="currentPrice">$0</div>
+                        <div class="metric-label" id="priceLabel">VIC1 Price ($/MWh)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="weekRevenue">$0</div>
+                        <div class="metric-label">Week Revenue</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="currentRank">#-</div>
+                        <div class="metric-label">Current Rank</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="cycleCount">0</div>
+                        <div class="metric-label">Cycles Today</div>
+                    </div>
+                </div>
+                <div class="metrics-grid" style="margin-top: 10px;">
+                    <div class="metric-card" style="background: rgba(255, 193, 7, 0.1); border-color: rgba(255, 193, 7, 0.3);">
+                        <div class="metric-label">FCAS Prices ($/MW/hr)</div>
+                        <div style="font-size: 0.85rem; margin-top: 5px;">
+                            <div>Raise Reg: <span id="fcasRaiseReg" style="color: #ffc107;">$0</span></div>
+                            <div>Lower Reg: <span id="fcasLowerReg" style="color: #ffc107;">$0</span></div>
+                            <div>Raise 6s: <span id="fcasRaise6s" style="color: #ffc107;">$0</span></div>
+                        </div>
+                    </div>
+                    <div class="metric-card" style="background: rgba(0, 123, 255, 0.1); border-color: rgba(0, 123, 255, 0.3);">
+                        <div class="metric-label">Market Demand</div>
+                        <div style="font-size: 0.85rem; margin-top: 5px;">
+                            <div>Demand: <span id="marketDemand" style="color: #007bff;">0 MW</span></div>
+                            <div>Generation: <span id="marketGeneration" style="color: #007bff;">0 MW</span></div>
+                            <div>Net Export: <span id="netInterchange" style="color: #007bff;">0 MW</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="soc-gauge">
+                    <div class="soc-fill" id="socFill" style="width: 50%">50% SoC</div>
+                </div>
+            </div>
+
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchTab('strategy')">Strategy</button>
+                <button class="tab-btn" onclick="switchTab('analytics')">Analytics</button>
+                <button class="tab-btn" onclick="switchTab('leaderboard')">Leaderboard</button>
+            </div>
+
+            <div class="tab-content active" id="strategyTab">
+                <!-- Mode Selection Panel -->
+                <div class="panel" style="margin-bottom: 20px;">
+                    <h2>Trading Mode Selection</h2>
+                    <div style="display: flex; gap: 20px; align-items: center;">
+                        <select id="modeSelect" onchange="switchMode(this.value)" style="padding: 8px; background: #1a1a2e; color: #00E87E; border: 1px solid #00E87E; border-radius: 4px; font-size: 1rem;">
+                            <option value="scheduled">Scheduled Mode (IRP - Advanced)</option>
+                            <option value="non-scheduled">Non-Scheduled Mode (Simple)</option>
+                        </select>
+                        <div id="modeInfo" class="info-box" style="flex: 1; margin: 0;">
+                            <strong>Scheduled Mode (IRP):</strong> Full 20-band bidstack dispatch by AEMO. Mandatory for 5MW+ BESS under Integrated Resource Provider rules. Co-optimized energy and FCAS.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="main-grid">
+                    <div class="panel">
+                        <h2>Energy Market Bidding</h2>
+                        <div id="scheduledSection" style="display: block;">
+                        <div class="info-box">
+                            <strong>NEM-Style 20-Band Bidstack:</strong> 10 bands for charging (consumption) and 10 bands for discharging (generation). 
+                            Prices must be ascending within each side. Max charge price must be less than min discharge price to prevent simultaneous dispatch.
+                        </div>
+                        
+                        <div class="price-guide">
+                            <h4>📊 Typical NEM Price Ranges:</h4>
+                            <ul>
+                                <li><strong>-$1000 to $0:</strong> Oversupply, renewable curtailment - ideal charging opportunity</li>
+                                <li><strong>$0 to $50:</strong> Low demand periods (late night/early morning)</li>
+                                <li><strong>$50 to $150:</strong> Normal daytime prices</li>
+                                <li><strong>$150 to $300:</strong> Peak demand (morning/evening peaks)</li>
+                                <li><strong>$300 to $1000:</strong> High demand or supply constraints</li>
+                                <li><strong>$1000+:</strong> Extreme events, outages, heatwaves</li>
+                                <li><strong>$15,000:</strong> Market price cap (very rare)</li>
+                            </ul>
+                        </div>
+                        
+                        <h3>⚡ Charge Bids (Consumption)</h3>
+                        <p class="bid-explanation">Set maximum prices you're willing to pay to charge. Battery charges when market price ≤ your bid price. <span style="color: #00E87E;">Hover over ⓘ for guidance on typical price scenarios.</span></p>
+                        <table class="bidstack-table">
+                            <thead>
+                                <tr>
+                                    <th>Band</th>
+                                    <th>MW</th>
+                                    <th>Max Price ($/MWh)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chargeBidstackBody"></tbody>
+                        </table>
+                        
+                        <h3>🔌 Discharge Bids (Generation)</h3>
+                        <p class="bid-explanation">Set minimum prices you're willing to accept to discharge. Battery discharges when market price ≥ your bid price. <span style="color: #00E87E;">Hover over ⓘ for guidance on typical price scenarios.</span></p>
+                        <table class="bidstack-table">
+                            <thead>
+                                <tr>
+                                    <th>Band</th>
+                                    <th>MW</th>
+                                    <th>Min Price ($/MWh)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dischargeBidstackBody"></tbody>
+                        </table>
+                        
+                        <button class="btn" onclick="updateBidstack()" style="margin-top: 15px; width: 100%;">Update Bidstack</button>
+                        <div id="bidstackStatus" style="margin-top: 10px;"></div>
+                        </div>
+                        
+                        <!-- Non-Scheduled Mode Section -->
+                        <div id="nonScheduledSection" style="display: none;">
+                            <div class="info-box">
+                                <strong>Simple Trading Rules:</strong> Set time windows and price thresholds for automatic charge/discharge. No bidstack required.
+                            </div>
+                            
+                            <h3>⚡ Charge Settings</h3>
+                            <div style="margin: 15px 0; padding: 15px; background: rgba(0, 0, 0, 0.2); border-radius: 4px;">
+                                <div style="margin-bottom: 10px;">
+                                    <label>Time Window:</label>
+                                    <input type="time" id="chargeStart" value="00:00" style="margin: 0 10px; padding: 5px; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 3px;">
+                                    to
+                                    <input type="time" id="chargeEnd" value="06:00" style="margin: 0 10px; padding: 5px; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label>Max Charge Price:</label>
+                                    <input type="number" id="maxChargePrice" value="50" placeholder="$/MWh" style="margin-left: 10px; padding: 5px; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 3px; width: 100px;">
+                                    <span style="color: #999; margin-left: 10px;">$/MWh (charge when price ≤ this)</span>
+                                </div>
+                            </div>
+                            
+                            <h3>🔌 Discharge Settings</h3>
+                            <div style="margin: 15px 0; padding: 15px; background: rgba(0, 0, 0, 0.2); border-radius: 4px;">
+                                <div style="margin-bottom: 10px;">
+                                    <label>Time Window:</label>
+                                    <input type="time" id="dischargeStart" value="17:00" style="margin: 0 10px; padding: 5px; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 3px;">
+                                    to
+                                    <input type="time" id="dischargeEnd" value="21:00" style="margin: 0 10px; padding: 5px; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 3px;">
+                                </div>
+                                <div>
+                                    <label>Min Discharge Price:</label>
+                                    <input type="number" id="minDischargePrice" value="200" placeholder="$/MWh" style="margin-left: 10px; padding: 5px; background: #1a1a2e; color: white; border: 1px solid #333; border-radius: 3px; width: 100px;">
+                                    <span style="color: #999; margin-left: 10px;">$/MWh (discharge when price ≥ this)</span>
+                                </div>
+                            </div>
+                            
+                            <button class="btn" onclick="updateNonScheduled()" style="width: 100%;">Update Simple Strategy</button>
+                            <div id="nonScheduledStatus" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2>FCAS Services & Custom Rules</h2>
+                        
+                        <div class="fcas-controls">
+                            <h3>Frequency Control Services</h3>
+                            <div class="fcas-service">
+                                <label>
+                                    <span><input type="checkbox" id="raiseReg"> Raise Regulation</span>
+                                    <span id="raiseRegPrice">$0/MW</span>
+                                </label>
+                                <input type="range" id="raiseRegCapacity" min="0" max="5" step="0.5" value="0">
+                                <span>Capacity: <span id="raiseRegCapValue">0</span> MW</span>
+                            </div>
+                            
+                            <div class="fcas-service">
+                                <label>
+                                    <span><input type="checkbox" id="lowerReg"> Lower Regulation</span>
+                                    <span id="lowerRegPrice">$0/MW</span>
+                                </label>
+                                <input type="range" id="lowerRegCapacity" min="0" max="5" step="0.5" value="0">
+                                <span>Capacity: <span id="lowerRegCapValue">0</span> MW</span>
+                            </div>
+                            
+                            <div class="fcas-service">
+                                <label>
+                                    <span><input type="checkbox" id="raise6sec"> Raise 6sec</span>
+                                    <span id="raise6secPrice">$0/MW</span>
+                                </label>
+                                <input type="range" id="raise6secCapacity" min="0" max="5" step="0.5" value="0">
+                                <span>Capacity: <span id="raise6secCapValue">0</span> MW</span>
+                            </div>
+                            
+                            <div class="fcas-service">
+                                <label>
+                                    <span><input type="checkbox" id="raise60sec"> Raise 60sec</span>
+                                    <span id="raise60secPrice">$0/MW</span>
+                                </label>
+                                <input type="range" id="raise60secCapacity" min="0" max="5" step="0.5" value="0">
+                                <span>Capacity: <span id="raise60secCapValue">0</span> MW</span>
+                            </div>
+                            
+                            <div class="fcas-service">
+                                <label>
+                                    <span><input type="checkbox" id="raise5min"> Raise 5min</span>
+                                    <span id="raise5minPrice">$0/MW</span>
+                                </label>
+                                <input type="range" id="raise5minCapacity" min="0" max="5" step="0.5" value="0">
+                                <span>Capacity: <span id="raise5minCapValue">0</span> MW</span>
+                            </div>
+                        </div>
+                        
+                        <div class="rules-editor">
+                            <h3>Custom Trading Rules (JavaScript)</h3>
+                            <textarea id="customRules" placeholder="// Example rules:
+if (price > 200 && soc > 80) {
+  discharge(5);
+} else if (price < 50 && soc < 20) {
+  charge(5);
+} else {
+  hold();
+}
+
+// Available variables:
+// price - current market price
+// soc - state of charge (0-100)
+// forecast - price forecast array"></textarea>
+                            <button class="btn" onclick="validateRules()" style="margin-top: 10px">Validate Rules</button>
+                        </div>
+                        
+                        <button class="btn" onclick="saveStrategy()" style="margin-top: 20px; width: 100%; background: #ffc107; color: black;">
+                            💾 Save Complete Strategy
+                        </button>
+                        <div id="saveStatus" style="margin-top: 10px; text-align: center;"></div>
+                        
+                        <div class="warning-box" style="margin-top: 20px;">
+                            <strong>⚠️ Daily Cycle Limit:</strong> Maximum 2 full cycles per day. Exceeding this limit will incur degradation penalties.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="analyticsTab">
+                <div class="panel">
+                    <h2>Performance Analytics</h2>
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="totalProfit">$0</div>
+                            <div class="metric-label">Net Profit (Revenue - Costs)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="avgEfficiency">90%</div>
+                            <div class="metric-label">Round-Trip Efficiency</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="fcasContribution">$0</div>
+                            <div class="metric-label">FCAS Revenue</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="degradationCost">$0</div>
+                            <div class="metric-label">Degradation Cost</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>Live Price & Battery Action</h2>
+                    <div class="chart-container">
+                        <canvas id="priceActionChart"></canvas>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 20px; justify-content: center;">
+                        <span style="color: #00E87E;">● Energy Price</span>
+                        <span style="color: #ffc107;">● State of Charge</span>
+                        <span style="color: #00ff8f;">▲ Charging</span>
+                        <span style="color: #ff4444;">▼ Discharging</span>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>State of Charge History</h2>
+                    <div class="chart-container">
+                        <canvas id="socChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="leaderboardTab">
+                <div class="panel">
+                    <h2>Live Leaderboard</h2>
+                    <div class="info-box">
+                        Rankings based on net profit (revenue minus degradation costs). Updates every 2 minutes.
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Team</th>
+                                <th>Net Profit</th>
+                                <th>Efficiency</th>
+                                <th>Daily Cycles</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <tr><td colspan="5" style="text-align: center;">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                    <button class="btn" onclick="updateLeaderboard()" style="margin-top: 20px">Refresh Leaderboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div id="tutorialModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeTutorial()">&times;</span>
+            <h2 style="color: #00E87E; margin-bottom: 20px;">📚 How to Trade with BESS in the NEM</h2>
+            
+            <div class="tutorial-section">
+                <h3>🎯 The Basic Concept</h3>
+                <p>You're operating a battery (BESS) that can:</p>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li><strong style="color: #00E87E;">CHARGE</strong> - Buy electricity when prices are low (or negative!)</li>
+                    <li><strong style="color: #ffc107;">DISCHARGE</strong> - Sell electricity when prices are high</li>
+                    <li><strong style="color: #999;">HOLD</strong> - Do nothing and wait</li>
+                </ul>
+                <p style="margin-top: 10px;">Your goal: Buy low, sell high, just like trading stocks!</p>
+            </div>
+            
+            <div class="tutorial-section">
+                <h3>📊 How Bands Work - The Key to Understanding!</h3>
+                <p>Think of bands as <strong>"IF-THEN" rules</strong> that automatically trigger based on market price:</p>
+                
+                <div class="example-box">
+                    <strong>⚡ CHARGE BANDS (When to Buy)</strong>
+                    <p>Each band says: "If the market price is BELOW OR EQUAL to my price, activate my MW capacity"</p>
+                    <ul style="margin-left: 20px;">
+                        <li>Band 1: Price = -$1000, MW = 0.5 → Charges 0.5MW when price ≤ -$1000</li>
+                        <li>Band 2: Price = -$500, MW = 0.5 → Charges 0.5MW when price ≤ -$500</li>
+                        <li>Band 5: Price = $0, MW = 0.5 → Charges 0.5MW when price ≤ $0</li>
+                    </ul>
+                    <p style="margin-top: 10px;"><em>Multiple bands stack! If price is -$600, both Band 1 and Band 2 activate = 1MW total charging</em></p>
+                </div>
+                
+                <div class="example-box">
+                    <strong>🔌 DISCHARGE BANDS (When to Sell)</strong>
+                    <p>Each band says: "If the market price is ABOVE OR EQUAL to my price, activate my MW capacity"</p>
+                    <ul style="margin-left: 20px;">
+                        <li>Band 1: Price = $200, MW = 0.5 → Discharges 0.5MW when price ≥ $200</li>
+                        <li>Band 2: Price = $300, MW = 0.5 → Discharges 0.5MW when price ≥ $300</li>
+                        <li>Band 5: Price = $1000, MW = 0.5 → Discharges 0.5MW when price ≥ $1000</li>
+                    </ul>
+                    <p style="margin-top: 10px;"><em>If price hits $350, Bands 1 & 2 both activate = 1MW total discharging</em></p>
+                </div>
+            </div>
+            
+            <div class="tutorial-section">
+                <h3>🎮 Real Example Scenario</h3>
+                <div class="example-box">
+                    <strong>Current Market Price: $250/MWh</strong>
+                    <p>With default settings:</p>
+                    <ul style="margin-left: 20px;">
+                        <li>✅ Discharge Band 1 ($200) activates → 0.5MW selling</li>
+                        <li>❌ Discharge Band 2 ($300) doesn't activate (price too low)</li>
+                        <li>❌ No charge bands activate (price too high for charging)</li>
+                    </ul>
+                    <p><strong>Result:</strong> Battery discharges at 0.5MW, earning $250 × 0.5MW × 0.083hr = $10.42 every 5 minutes!</p>
+                </div>
+                
+                <div class="example-box">
+                    <strong>Market Price Drops to: -$100/MWh (negative pricing!)</strong>
+                    <p>With default settings:</p>
+                    <ul style="margin-left: 20px;">
+                        <li>✅ Charge Bands 1-3 activate (all ≥ -$100) → 1.5MW charging</li>
+                        <li>❌ No discharge bands activate (price way too low)</li>
+                    </ul>
+                    <p><strong>Result:</strong> Battery charges at 1.5MW and GETS PAID $100 × 1.5MW × 0.083hr = $12.50!</p>
+                </div>
+            </div>
+            
+            <div class="tutorial-section">
+                <h3>💡 Pro Trading Tips</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li><strong>Watch the live price</strong> - It updates every 5 minutes from real NEM data</li>
+                    <li><strong>Negative prices = FREE MONEY</strong> - You get paid to charge during oversupply!</li>
+                    <li><strong>Peak times</strong> - Morning (7-9am) and Evening (5-8pm) typically have highest prices</li>
+                    <li><strong>Set wider spreads</strong> - Don't set charge and discharge prices too close</li>
+                    <li><strong>Use all bands</strong> - Spread your MW across bands for gradual response</li>
+                    <li><strong>Watch your cycles</strong> - Max 2 full cycles per day before degradation penalty</li>
+                    <li><strong>Enable FCAS carefully</strong> - Regulation reserves capacity (1MW reg = 4MW for energy)</li>
+                    <li><strong>Co-optimization</strong> - NEMDE allocates MW to highest value (energy vs FCAS)</li>
+                </ul>
+            </div>
+            
+            <div class="tutorial-section">
+                <h3>🏁 Quick Start Guide</h3>
+                <ol style="margin-left: 20px; line-height: 1.8;">
+                    <li>Enter your team name and click "Start Trading"</li>
+                    <li>Review the default band settings (they're already reasonable!)</li>
+                    <li>Click "Update Bidstack" to save your strategy</li>
+                    <li>Watch the Live Market Status to see your battery in action</li>
+                    <li>Adjust bands based on market patterns you observe</li>
+                    <li>Click "Save Complete Strategy" to persist your settings</li>
+                    <li>Check the Leaderboard to see how you rank!</li>
+                </ol>
+            </div>
+            
+            <button class="btn" onclick="closeTutorial()" style="width: 100%; margin-top: 20px;">Got it! Let's Trade 🚀</button>
+        </div>
+    </div>
+
+    <script src="gamified-trading.js"></script>
+    <script>
+        function showTutorial() {
+            document.getElementById('tutorialModal').style.display = 'block';
+        }
+        
+        function closeTutorial() {
+            document.getElementById('tutorialModal').style.display = 'none';
+        }
+        
+        function changeRegion() {
+            const selector = document.getElementById('regionSelector');
+            if (window.state) {
+                window.state.market.region = selector.value;
+                window.updateMarketData();
+            }
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('tutorialModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "@sunney/scraper-worker",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "echo 'No tests yet'"
+  },
+  "dependencies": {
+    "csv-parse": "^6.1.0",
+    "date-fns": "^3.6.0",
+    "date-fns-tz": "^3.1.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

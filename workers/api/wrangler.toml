@@ -1,0 +1,39 @@
+name = "sunney-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Database for market data (shared with scraper)
+[[d1_databases]]
+binding = "DB"
+database_name = "sunney-market"
+database_id = "8ed478aa-18e4-4ba2-aabb-2225c05f6d0f"
+
+# KV for caching (shared with scraper)
+[[kv_namespaces]]
+binding = "CACHE"
+id = "5ef4a4c71d364a7ebaf731a280233031"
+
+# R2 for archive storage
+[[r2_buckets]]
+binding = "ARCHIVE"
+bucket_name = "sunney-archive"
+
+# Service binding to auth worker
+[[services]]
+binding = "AUTH_WORKER"
+service = "sunney-auth"
+
+# Durable Objects
+[[durable_objects.bindings]]
+name = "TRADING_ROOM"
+class_name = "TradingRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["TradingRoom"]
+
+# Custom domains (will be set up after deployment)
+# routes = [
+#   { pattern = "api.sunney.io/*", custom_domain = true }
+# ]

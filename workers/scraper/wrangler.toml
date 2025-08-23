@@ -1,0 +1,30 @@
+name = "sunney-scraper"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Database for market data (shared with API)
+[[d1_databases]]
+binding = "DB"
+database_name = "sunney-market"
+database_id = "8ed478aa-18e4-4ba2-aabb-2225c05f6d0f"
+
+# KV for caching (shared with API)
+[[kv_namespaces]]
+binding = "CACHE"
+id = "5ef4a4c71d364a7ebaf731a280233031"
+
+# R2 for archive storage
+[[r2_buckets]]
+binding = "ARCHIVE"
+bucket_name = "sunney-archive"
+
+# Durable Object binding for broadcasting
+[[durable_objects.bindings]]
+name = "TRADING_ROOM"
+class_name = "TradingRoom"
+script_name = "sunney-api"
+
+# Cron trigger - runs every 5 minutes
+[triggers]
+crons = ["*/5 * * * *"]

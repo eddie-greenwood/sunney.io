@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="theme-color" content="#0A0F0D">
+    <title>NEM Live • Greenwood Energy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Enhanced cyberpunk palette with neon variety */
+            --primary: #00FF88;
+            --primary-dim: #00CC6A;
+            --primary-bright: #33FFB5;
+            --primary-glow: rgba(0, 255, 136, 0.4);
+            --neon-pink: #FF00FF;
+            --neon-blue: #00D4FF;
+            --neon-yellow: #FFB800;
+            
+            /* Backgrounds */
+            --bg-base: #0A1410;
+            --bg-elevated: #111B17;
+            --bg-surface: #1A2621;
+            --bg-overlay: rgba(10, 20, 16, 0.95);
+            
+            /* Text */
+            --text-primary: #FFFFFF;
+            --text-secondary: #B8C5C0;
+            --text-tertiary: #7A8B85;
+            --text-muted: #566862;
+            
+            /* Semantic */
+            --success: #00FF88;
+            --warning: #FFB800;
+            --danger: #FF4757;
+            --info: #00D4FF;
+            
+            /* Price gradients */
+            --price-low: #00FF88;
+            --price-medium: #FFB800;
+            --price-high: #FF6B35;
+            --price-extreme: #FF4757;
+            
+            /* UI */
+            --border: rgba(255, 255, 255, 0.06);
+            --border-light: rgba(255, 255, 255, 0.03);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+            --shadow-glow: 0 0 40px var(--primary-glow);
+            
+            /* Fluid typography - better mobile scaling */
+            --fs-xs: clamp(0.65rem, 0.6rem + 0.5vw, 0.75rem);
+            --fs-sm: clamp(0.75rem, 0.7rem + 0.5vw, 0.875rem);
+            --fs-base: clamp(0.875rem, 0.85rem + 0.5vw, 1rem);
+            --fs-lg: clamp(1.25rem, 1.1rem + 1vw, 1.75rem);
+            --fs-xl: clamp(1.75rem, 1.5rem + 2vw, 2.5rem);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+
+        * {
+            max-width: 100vw;
+        }
+
+        /* Animated cyberpunk gradient background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.015) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 255, 0.01) 0%, transparent 40%),
+                radial-gradient(circle at 50% 20%, rgba(0, 212, 255, 0.01) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+            animation: gradientShift 45s ease-in-out infinite;
+        }
+
+        /* Spinning neon glow overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 150%;
+            height: 150%;
+            background: radial-gradient(circle at center, 
+                rgba(0, 255, 136, 0.06) 0%, 
+                transparent 30%,
+                transparent 60%,
+                rgba(255, 0, 255, 0.04) 100%);
+            transform: translate(-50%, -50%);
+            animation: rotateGlow 30s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.7;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            33% { transform: scale(1.1) rotate(120deg); }
+            66% { transform: scale(0.95) rotate(240deg); }
+        }
+
+        @keyframes rotateGlow {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* Header with glitch effect */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(3, 8, 6, 0.95);
+            backdrop-filter: blur(30px) saturate(150%);
+            border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+            padding-top: env(safe-area-inset-top);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .header-content {
+            max-width: 100%;
+            margin: 0;
+            padding: 0.3rem 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0.5rem 0.75rem;
+            }
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo {
+            height: 35px;
+            width: auto;
+            display: block;
+            transition: transform 0.3s ease, filter 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .logo {
+                height: 28px;
+            }
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+            animation: glitch 0.3s linear infinite;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .status-bar {
+                gap: 0.5rem;
+            }
+        }
+
+        /* Live badge with enhanced pulse */
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 100px;
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .live-badge {
+                padding: 0.2rem 0.4rem;
+            }
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+            animation: livePulse 4s infinite;
+        }
+
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+
+        .time-display {
+            font-size: var(--fs-sm);
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Dynamic grid layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            padding: 1rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-areas: 
+                    "map"
+                    "left"
+                    "right";
+                grid-template-columns: 1fr;
+                padding: 0.5rem;
+                gap: 0.5rem;
+            }
+            
+            .map-container { grid-area: map; }
+            .sidebar-left { grid-area: left; }
+            .sidebar-right { grid-area: right; }
+        }
+
+        @media (min-width: 769px) {
+            .dashboard {
+                grid-template-columns: 280px 1fr 280px;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .dashboard {
+                grid-template-columns: 320px 1fr 320px;
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .dashboard {
+                grid-template-columns: minmax(260px, 1fr) 4fr minmax(260px, 1fr);
+            }
+        }
+
+        /* Cyberpunk card with glitch border */
+        .card {
+            background: linear-gradient(135deg, 
+                rgba(0, 255, 136, 0.03) 0%, 
+                rgba(17, 27, 23, 0.8) 50%, 
+                rgba(0, 255, 136, 0.02) 100%), 
+                rgba(10, 20, 16, 0.9);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 8px;
+            padding: 0.75rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(20px);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 136, 0.1), 
+                inset 0 0 20px rgba(0, 255, 136, 0.02);
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 1rem;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg), 0 0 30px rgba(0, 255, 136, 0.05);
+            border-color: var(--neon-pink);
+            animation: glitch-border 0.5s linear;
+        }
+
+        @keyframes glitch-border {
+            0% { border-color: var(--primary); }
+            25% { border-color: var(--neon-blue); }
+            50% { border-color: var(--neon-yellow); }
+            75% { border-color: var(--neon-pink); }
+            100% { border-color: var(--primary); }
+        }
+
+        .stat-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: var(--fs-xs);
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: var(--fs-xl);
+            font-weight: 800;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: baseline;
+            gap: 0.25rem;
+        }
+
+        .stat-unit {
+            font-size: var(--fs-sm);
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        /* Enhanced map container */
+        .map-container {
+            height: calc(100vh - 5rem);
+            min-height: 500px;
+            background: linear-gradient(135deg, 
+                rgba(0, 255, 136, 0.02) 0%, 
+                rgba(17, 27, 23, 0.6) 50%, 
+                rgba(0, 255, 136, 0.01) 100%);
+            border: 1px solid rgba(0, 255, 136, 0.1);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 
+                inset 0 0 40px rgba(0, 255, 136, 0.05), 
+                0 0 30px rgba(0, 255, 136, 0.03);
+        }
+
+        /* Radar scan animation */
+        .map-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 30%, rgba(0, 255, 136, 0.1) 40%, transparent 41%);
+            animation: radarScan 5s linear infinite;
+            opacity: 0.3;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes radarScan {
+            0% { transform: translate(-50%, -50%) scale(0) rotate(0deg); opacity: 0.5; }
+            100% { transform: translate(-50%, -50%) scale(2) rotate(360deg); opacity: 0; }
+        }
+
+        .map-container {
+            height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (max-width: 768px) {
+            .map-container {
+                height: 350px;
+                border-radius: 8px;
+            }
+        }
+
+        @media (min-width: 1440px) {
+            .map-container {
+                height: 600px;
+            }
+        }
+
+        #nemMap {
+            width: 100%;
+            height: 100%;
+        }
+
+        @media (min-width: 769px) {
+            #nemMap {
+                max-width: 700px;
+                max-height: 700px;
+            }
+        }
+
+        /* State nodes */
+        .state-node {
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .state-node:hover {
+            transform: scale(1.1);
+        }
+
+        .state-circle {
+            fill: rgba(10, 20, 16, 0.9);
+            stroke-width: 2.5;
+            transition: all 0.3s ease;
+            filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.2));
+        }
+
+        .state-label {
+            fill: var(--text-primary);
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            text-anchor: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            pointer-events: none;
+        }
+
+        .state-price {
+            font-size: var(--fs-lg);
+            font-weight: 800;
+            text-anchor: middle;
+            pointer-events: none;
+        }
+
+        .state-demand {
+            font-size: var(--fs-xs);
+            fill: var(--text-tertiary);
+            text-anchor: middle;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        /* Interconnector lines */
+        .interconnector {
+            stroke: rgba(0, 255, 136, 0.3);
+            stroke-width: 2;
+            fill: none;
+            opacity: 0.6;
+            transition: all 0.3s ease;
+        }
+
+        .interconnector.active {
+            stroke: var(--primary);
+            stroke-width: 3;
+            opacity: 1;
+            filter: drop-shadow(0 0 12px rgba(0, 255, 136, 0.8));
+        }
+
+        /* Arbitrage card */
+        .arbitrage-card {
+            background: linear-gradient(135deg, 
+                rgba(0, 255, 136, 0.05) 0%, 
+                var(--bg-surface) 50%);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .arbitrage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .arbitrage-title {
+            font-size: var(--fs-sm);
+            font-weight: 700;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .arbitrage-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 2px 8px;
+            background: var(--primary);
+            color: var(--bg-base);
+            border-radius: 4px;
+            font-size: var(--fs-xs);
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        /* Period tabs */
+        .period-tabs {
+            display: flex;
+            gap: 0.25rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.25rem;
+            border-radius: 8px;
+            margin: 0.75rem 0;
+        }
+
+        .period-tab {
+            flex: 1;
+            padding: 0.5rem;
+            background: transparent;
+            border: none;
+            color: var(--text-tertiary);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        @media (max-width: 768px) {
+            .period-tab {
+                padding: 0.75rem 0.5rem;
+                font-size: var(--fs-sm);
+            }
+        }
+
+        .period-tab:hover {
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .period-tab.active {
+            background: rgba(0, 255, 136, 0.15);
+            color: var(--primary);
+        }
+
+        /* Arbitrage stats */
+        .arbitrage-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 0.75rem 0;
+        }
+
+        .arbitrage-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .arbitrage-stat-label {
+            font-size: var(--fs-xs);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .arbitrage-stat-value {
+            font-size: var(--fs-lg);
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .arbitrage-stat-time {
+            font-size: var(--fs-xs);
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* Opportunity list */
+        .opportunity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .opportunity-item {
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: var(--fs-sm);
+            transition: all 0.2s ease;
+        }
+
+        @media (max-width: 768px) {
+            .opportunity-item {
+                padding: 0.75rem;
+            }
+        }
+
+        .opportunity-item:hover {
+            background: rgba(0, 255, 136, 0.05);
+            border-color: rgba(0, 255, 136, 0.2);
+            transform: translateX(2px);
+        }
+
+        .opportunity-item.primary {
+            background: rgba(0, 255, 136, 0.08);
+            border-color: rgba(0, 255, 136, 0.3);
+        }
+
+        /* Error message */
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin: 0.75rem;
+            display: none;
+            font-size: var(--fs-sm);
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, 
+                var(--bg-surface) 25%, 
+                rgba(255, 255, 255, 0.05) 50%, 
+                var(--bg-surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 4px;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Mobile sidebar styles - simplified without toggle */
+        .sidebar-toggle {
+            display: none; /* Remove toggle button completely */
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-left, .sidebar-right {
+                position: static; /* Make them part of normal flow */
+                transform: none;
+                background: var(--bg-elevated);
+                border-radius: 8px;
+                max-height: none;
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        /* Reduced motion support */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            :root {
+                --primary: #00FFB3;
+                --bg-base: #000000;
+                --text-primary: #FFFFFF;
+                --text-secondary: #E0E0E0;
+            }
+        }
+
+        /* Cyberpunk Price Chart - Always Visible */
+        .chart-container {
+            margin: 2rem auto;
+            max-width: 1800px;
+            height: 450px;
+            background: linear-gradient(135deg, 
+                rgba(0, 212, 255, 0.05) 0%, 
+                rgba(10, 20, 16, 0.95) 50%, 
+                rgba(255, 0, 255, 0.03) 100%);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 300px;
+                margin: 1rem 0.5rem;
+                padding: 1rem;
+            }
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .chart-legend {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            background: rgba(10, 20, 16, 0.9);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            font-size: var(--fs-sm);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .chart-legend {
+                top: 1rem;
+                right: 1rem;
+                padding: 0.5rem;
+                gap: 0.5rem;
+                font-size: var(--fs-xs);
+            }
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        @media (max-width: 768px) {
+            .legend-dot {
+                width: 8px;
+                height: 8px;
+            }
+        }
+
+        .chart-grid {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(10, 20, 16, 0.95);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: var(--fs-xs);
+            color: var(--text-primary);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .chart-tooltip.visible {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo-section">
+                <a href="http://greenwood.io" target="_blank" rel="noopener noreferrer" style="display: inline-block;">
+                    <img src="../assets/Greenwood Energylogo.svg" alt="Greenwood Energy" class="logo" />
+                </a>
+            </div>
+            <div class="status-bar">
+                <div class="live-badge">
+                    <div class="live-dot"></div>
+                    <span>Live Data</span>
+                </div>
+                <div class="time-display" id="currentTime">--:--:--</div>
+            </div>
+        </div>
+    </header>
+
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <main class="dashboard">
+        <aside class="sidebar-left">
+            <div class="card arbitrage-card">
+                <div class="arbitrage-header">
+                    <div class="arbitrage-title">Arbitrage</div>
+                    <div class="arbitrage-badge">Live</div>
+                </div>
+                <div class="period-tabs">
+                    <button class="period-tab active" data-period="4h">4H</button>
+                    <button class="period-tab" data-period="24h">24H</button>
+                    <button class="period-tab" data-period="7d">7D</button>
+                    <button class="period-tab" data-period="30d">30D</button>
+                </div>
+                <div class="arbitrage-stats">
+                    <div class="arbitrage-stat">
+                        <div class="arbitrage-stat-label">Best Spread Now</div>
+                        <div class="arbitrage-stat-value" id="currentSpread">$--</div>
+                        <div class="arbitrage-stat-time" id="spreadTime">--:--</div>
+                    </div>
+                    <div class="arbitrage-stat">
+                        <div class="arbitrage-stat-label">Period High</div>
+                        <div class="arbitrage-stat-value" id="bestToday">$--</div>
+                        <div class="arbitrage-stat-time" id="periodTime">Last 4H</div>
+                    </div>
+                </div>
+                <div class="opportunity-list" id="opportunityList">
+                    <div class="skeleton" style="height: 60px;"></div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="map-container">
+            <svg id="nemMap" viewBox="250 100 600 800" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <!-- Gradients -->
+                    <linearGradient id="gradientLow" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#00FF88;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#00FF88;stop-opacity:0.3" />
+                    </linearGradient>
+                    <linearGradient id="gradientMedium" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FFB800;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FFB800;stop-opacity:0.3" />
+                    </linearGradient>
+                    <linearGradient id="gradientHigh" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FF6B35;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FF6B35;stop-opacity:0.3" />
+                    </linearGradient>
+                    <linearGradient id="gradientExtreme" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#FF4757;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#FF4757;stop-opacity:0.3" />
+                    </linearGradient>
+                    
+                    <!-- Glow filter -->
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                        <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>
+                </defs>
+                
+                <g id="interconnectors"></g>
+                <g id="stateNodes"></g>
+            </svg>
+        </section>
+
+        <aside class="sidebar-right">
+            <div class="card stat-card">
+                <div class="stat-label">Total Demand</div>
+                <div class="stat-value">
+                    <span id="totalDemand">--</span>
+                    <span class="stat-unit">MW</span>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Total Generation</div>
+                <div class="stat-value">
+                    <span id="totalGeneration">--</span>
+                    <span class="stat-unit">MW</span>
+                </div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Settlement Period</div>
+                <div class="stat-value" id="settlementTime" style="font-size: var(--fs-lg);">--:--</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Last Update</div>
+                <div class="stat-value" id="lastUpdate" style="font-size: var(--fs-lg);">--:--:--</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-label">Network Status</div>
+                <div class="stat-value" style="color: var(--success);">● Online</div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Cyberpunk Price Chart -->
+    <div class="chart-container" id="chartContainer">
+        <div class="chart-wrapper">
+            <canvas id="priceChart" class="chart-canvas"></canvas>
+            <div class="chart-legend" id="chartLegend">
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #00FF88;"></div>
+                    <span>QLD</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #00D4FF;"></div>
+                    <span>NSW</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF00FF;"></div>
+                    <span>VIC</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FFB800;"></div>
+                    <span>TAS</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot" style="background: #FF4757;"></div>
+                    <span>SA</span>
+                </div>
+            </div>
+            <div class="chart-tooltip" id="chartTooltip"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'https://aemo-unified-source.eddie-37d.workers.dev/api/latest';
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const UPDATE_INTERVAL = isMobile ? 120000 : 60000;
+
+        // State management
+        const state = {
+            data: null,
+            currentPeriod: '4h',
+            updateTimer: null,
+            priceHistory: JSON.parse(localStorage.getItem('priceHistory') || '[]'),
+            chartContext: null
+        };
+
+        // Chart configuration
+        const chartConfig = {
+            colors: {
+                'QLD1': '#00FF88',
+                'NSW1': '#00D4FF',
+                'VIC1': '#FF00FF',
+                'TAS1': '#FFB800',
+                'SA1': '#FF4757'
+            },
+            maxPoints: 96, // 8 hours of 5-minute intervals
+            gridLines: 6
+        };
+
+        // State positions for map - adjusted for mobile
+        const stateConfig = {
+            'QLD1': { x: isMobile ? 550 : 700, y: isMobile ? 200 : 250, label: 'QLD' },
+            'NSW1': { x: isMobile ? 500 : 650, y: isMobile ? 350 : 400, label: 'NSW' },
+            'VIC1': { x: isMobile ? 450 : 570, y: isMobile ? 500 : 550, label: 'VIC' },
+            'TAS1': { x: isMobile ? 500 : 620, y: isMobile ? 650 : 700, label: 'TAS' },
+            'SA1': { x: isMobile ? 350 : 400, y: isMobile ? 450 : 500, label: 'SA' }
+        };
+
+        // Initialize map
+        function initializeMap() {
+            const interconnectorGroup = document.getElementById('interconnectors');
+            const stateGroup = document.getElementById('stateNodes');
+            
+            // Draw interconnectors
+            const connections = [
+                ['QLD1', 'NSW1'],
+                ['NSW1', 'VIC1'],
+                ['VIC1', 'TAS1'],
+                ['VIC1', 'SA1']
+            ];
+            
+            connections.forEach(([from, to]) => {
+                const fromPos = stateConfig[from];
+                const toPos = stateConfig[to];
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('class', 'interconnector');
+                line.setAttribute('id', `line-${from}-${to}`);
+                line.setAttribute('x1', fromPos.x);
+                line.setAttribute('y1', fromPos.y);
+                line.setAttribute('x2', toPos.x);
+                line.setAttribute('y2', toPos.y);
+                interconnectorGroup.appendChild(line);
+            });
+            
+            // Draw state nodes
+            Object.entries(stateConfig).forEach(([stateId, config]) => {
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'state-node');
+                g.setAttribute('data-state', stateId);
+                
+                const nodeRadius = isMobile ? 35 : 45; // Smaller nodes on mobile
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', config.x);
+                circle.setAttribute('cy', config.y);
+                circle.setAttribute('r', nodeRadius);
+                circle.setAttribute('class', 'state-circle');
+                circle.setAttribute('id', `circle-${stateId}`);
+                circle.setAttribute('stroke', 'url(#gradientLow)');
+                circle.setAttribute('filter', 'url(#glow)');
+                
+                const labelOffset = isMobile ? 22 : 28; // Adjust label offset for mobile
+                const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                label.setAttribute('class', 'state-label');
+                label.setAttribute('x', config.x);
+                label.setAttribute('y', config.y - labelOffset);
+                label.textContent = config.label;
+                
+                const price = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                price.setAttribute('class', 'state-price');
+                price.setAttribute('id', `price-${stateId}`);
+                price.setAttribute('x', config.x);
+                price.setAttribute('y', config.y + 5);
+                price.textContent = '$--';
+                
+                const demand = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                demand.setAttribute('class', 'state-demand');
+                demand.setAttribute('id', `demand-${stateId}`);
+                demand.setAttribute('x', config.x);
+                demand.setAttribute('y', config.y + 25);
+                demand.textContent = '-- MW';
+                
+                g.appendChild(circle);
+                g.appendChild(label);
+                g.appendChild(price);
+                g.appendChild(demand);
+                
+                // Add hover effect
+                g.addEventListener('mouseenter', () => handleStateHover(stateId, true));
+                g.addEventListener('mouseleave', () => handleStateHover(stateId, false));
+                
+                stateGroup.appendChild(g);
+            });
+        }
+
+        // Handle state hover
+        function handleStateHover(stateId, isHovering) {
+            const connections = [
+                ['QLD1', 'NSW1'],
+                ['NSW1', 'VIC1'],
+                ['VIC1', 'TAS1'],
+                ['VIC1', 'SA1']
+            ];
+            
+            connections.forEach(([from, to]) => {
+                if (from === stateId || to === stateId) {
+                    const line = document.getElementById(`line-${from}-${to}`);
+                    if (line) {
+                        line.classList.toggle('active', isHovering);
+                    }
+                }
+            });
+        }
+
+        // Get price color
+        function getPriceColor(price) {
+            if (price < 0) return '#00D4FF';
+            if (price < 100) return '#00FF88';
+            if (price < 300) return '#FFB800';
+            if (price < 500) return '#FF6B35';
+            return '#FF4757';
+        }
+
+        // Get price gradient
+        function getPriceGradient(price) {
+            if (price < 100) return 'gradientLow';
+            if (price < 300) return 'gradientMedium';
+            if (price < 500) return 'gradientHigh';
+            return 'gradientExtreme';
+        }
+
+        // Update visualization
+        function updateVisualization(data) {
+            if (!data || !data.regions) {
+                console.error('Invalid data structure:', data);
+                return;
+            }
+            
+            let totalDemand = 0;
+            let totalGeneration = 0;
+            
+            // Update each region
+            Object.entries(data.regions).forEach(([region, regionData]) => {
+                const price = regionData.energyPrice || 0;
+                const demand = regionData.totalDemand || regionData.scheduledDemand || 0;
+                const generation = regionData.dispatchableGeneration || 0;
+                
+                totalDemand += demand;
+                totalGeneration += generation;
+                
+                // Update price
+                const priceEl = document.getElementById(`price-${region}`);
+                if (priceEl) {
+                    priceEl.textContent = `$${Math.round(price)}`;
+                    priceEl.setAttribute('fill', getPriceColor(price));
+                }
+                
+                // Update demand
+                const demandEl = document.getElementById(`demand-${region}`);
+                if (demandEl) {
+                    demandEl.textContent = `${Math.round(demand).toLocaleString()} MW`;
+                }
+                
+                // Update circle color
+                const circle = document.getElementById(`circle-${region}`);
+                if (circle) {
+                    circle.setAttribute('stroke', `url(#${getPriceGradient(price)})`);
+                }
+            });
+            
+            // Update stats
+            document.getElementById('totalDemand').textContent = Math.round(totalDemand).toLocaleString();
+            document.getElementById('totalGeneration').textContent = Math.round(totalGeneration).toLocaleString();
+            
+            // Update times
+            if (data.settlementTime) {
+                const time = data.settlementTime.split(' ')[1];
+                if (time) {
+                    document.getElementById('settlementTime').textContent = time.substring(0, 5);
+                }
+            }
+            
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = 
+                now.toLocaleTimeString('en-AU', { hour12: false });
+            
+            // Update arbitrage
+            updateArbitrageDisplay(data);
+        }
+
+        // Update arbitrage display
+        function updateArbitrageDisplay(data) {
+            const selectedPeriod = state.currentPeriod;
+            
+            // Calculate spreads for ALL regions based on price history
+            const allStates = ['QLD1', 'NSW1', 'VIC1', 'TAS1', 'SA1'];
+            const opportunities = [];
+            
+            // Get price history for selected period
+            const periodHours = {
+                '4h': 4,
+                '24h': 24,
+                '7d': 168,
+                '30d': 720
+            }[selectedPeriod] || 4;
+            
+            const cutoffTime = Date.now() - (periodHours * 60 * 60 * 1000);
+            const relevantHistory = state.priceHistory.filter(point => 
+                new Date(point.timestamp) > new Date(cutoffTime)
+            );
+            
+            // Calculate spread for each state
+            allStates.forEach(stateId => {
+                const prices = [];
+                const pricePoints = [];
+                
+                // Collect prices from history
+                relevantHistory.forEach(point => {
+                    if (point.regions[stateId] && point.regions[stateId].price > 0) {
+                        prices.push(point.regions[stateId].price);
+                        pricePoints.push({
+                            price: point.regions[stateId].price,
+                            time: point.timestamp
+                        });
+                    }
+                });
+                
+                // Also add current price if available
+                if (data && data.regions && data.regions[stateId] && data.regions[stateId].energyPrice > 0) {
+                    prices.push(data.regions[stateId].energyPrice);
+                    pricePoints.push({
+                        price: data.regions[stateId].energyPrice,
+                        time: data.settlementTime || new Date().toISOString()
+                    });
+                }
+                
+                if (prices.length >= 2) {
+                    const minPrice = Math.min(...prices);
+                    const maxPrice = Math.max(...prices);
+                    const spread = maxPrice - minPrice;
+                    
+                    // Find when min and max occurred
+                    const minPoint = pricePoints.find(p => p.price === minPrice);
+                    const maxPoint = pricePoints.find(p => p.price === maxPrice);
+                    
+                    opportunities.push({
+                        region: stateId,
+                        spread: spread,
+                        buyPrice: minPrice,
+                        buyTime: minPoint ? new Date(minPoint.time).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--',
+                        sellPrice: maxPrice,
+                        sellTime: maxPoint ? new Date(maxPoint.time).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', hour12: false }) : '--:--'
+                    });
+                } else {
+                    // Not enough data
+                    const currentPrice = data?.regions?.[stateId]?.energyPrice || 0;
+                    opportunities.push({
+                        region: stateId,
+                        spread: 0,
+                        buyPrice: currentPrice,
+                        buyTime: '--:--',
+                        sellPrice: currentPrice,
+                        sellTime: '--:--'
+                    });
+                }
+            });
+            
+            // Sort by spread (highest first)
+            opportunities.sort((a, b) => b.spread - a.spread);
+            
+            // Update display
+            if (opportunities.length > 0) {
+                const bestOpp = opportunities[0];
+                document.getElementById('currentSpread').textContent = `$${Math.round(bestOpp.spread)}`;
+                document.getElementById('spreadTime').textContent = bestOpp.spread > 0 ? 
+                    `${bestOpp.buyTime} → ${bestOpp.sellTime}` : '--:--';
+                
+                const maxSpread = Math.max(...opportunities.map(o => o.spread));
+                document.getElementById('bestToday').textContent = `$${Math.round(maxSpread)}`;
+                
+                const periodLabels = {
+                    '4h': 'Last 4H',
+                    '24h': 'Last 24H',
+                    '7d': 'Last 7D',
+                    '30d': 'Last 30D'
+                };
+                document.getElementById('periodTime').textContent = periodLabels[selectedPeriod] || 'Last 4H';
+            } else {
+                document.getElementById('currentSpread').textContent = '$--';
+                document.getElementById('bestToday').textContent = '$--';
+                document.getElementById('spreadTime').textContent = '--:--';
+                document.getElementById('periodTime').textContent = 'No Data';
+            }
+            
+            // Display ALL states
+            let html = '';
+            opportunities.forEach((opp, index) => {
+                const regionLabel = stateConfig[opp.region]?.label || opp.region;
+                const isPositive = opp.spread > 10; // Only highlight if spread > $10
+                html += `
+                    <div class="opportunity-item ${index === 0 && isPositive ? 'primary' : ''}">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 600;">${regionLabel}</span>
+                            <span style="color: ${isPositive ? 'var(--primary)' : 'var(--text-muted)'}; font-weight: 700;">$${Math.round(opp.spread)}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                            <span style="color: var(--text-muted); font-size: var(--fs-xs);">Low: $${Math.round(opp.buyPrice)} @ ${opp.buyTime}</span>
+                            <span style="color: var(--text-muted); font-size: var(--fs-xs);">High: $${Math.round(opp.sellPrice)} @ ${opp.sellTime}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            if (html === '') {
+                html = '<div style="text-align: center; color: var(--text-muted); padding: 0.75rem;">Collecting price data...</div>';
+            }
+            
+            document.getElementById('opportunityList').innerHTML = html;
+        }
+
+        // Fetch data
+        async function fetchData() {
+            try {
+                console.log('Fetching data from:', API_URL);
+                
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Data received:', data);
+                
+                state.data = data;
+                updateVisualization(data);
+                updatePriceHistory(data);
+                
+                // Clear error
+                const errorEl = document.getElementById('errorMessage');
+                errorEl.style.display = 'none';
+                errorEl.textContent = '';
+                
+            } catch (error) {
+                console.error('Fetch error:', error);
+                const errorEl = document.getElementById('errorMessage');
+                errorEl.textContent = `Error: ${error.message}. Retrying...`;
+                errorEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = 
+                now.toLocaleTimeString('en-AU', { hour12: false });
+        }
+
+        // Initialize period tabs
+        function initializePeriodTabs() {
+            document.querySelectorAll('.period-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.period-tab').forEach(t => 
+                        t.classList.remove('active'));
+                    this.classList.add('active');
+                    state.currentPeriod = this.dataset.period;
+                    
+                    // Update labels
+                    const labels = {
+                        '4h': ['Current Spread', 'Best 4H'],
+                        '24h': ['Current Spread', 'Best Today'],
+                        '7d': ['Current Spread', 'Best 7 Days'],
+                        '30d': ['Current Spread', 'Best Month']
+                    };
+                    
+                    const [label1, label2] = labels[state.currentPeriod];
+                    document.querySelectorAll('.arbitrage-stat-label')[0].textContent = label1;
+                    document.querySelectorAll('.arbitrage-stat-label')[1].textContent = label2;
+                    
+                    if (state.data) {
+                        updateArbitrageDisplay(state.data);
+                    }
+                });
+            });
+        }
+
+        // Initialize mobile sidebar
+        function initializeMobileSidebar() {
+            const toggleBtn = document.querySelector('.sidebar-toggle');
+            if (toggleBtn && isMobile) {
+                toggleBtn.addEventListener('click', () => {
+                    document.querySelectorAll('.sidebar-left, .sidebar-right').forEach(sidebar => {
+                        sidebar.classList.toggle('expanded');
+                    });
+                });
+            }
+        }
+
+        // Handle visibility change
+        function handleVisibilityChange() {
+            if (document.hidden) {
+                if (state.updateTimer) {
+                    clearInterval(state.updateTimer);
+                    state.updateTimer = null;
+                }
+            } else {
+                fetchData();
+                state.updateTimer = setInterval(fetchData, UPDATE_INTERVAL);
+            }
+        }
+
+        // Initialize chart
+        function initializeChart() {
+            const canvas = document.getElementById('priceChart');
+            if (!canvas) return;
+            
+            state.chartContext = canvas.getContext('2d');
+            
+            // Set canvas size
+            const resizeCanvas = () => {
+                const container = canvas.parentElement;
+                if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+                    canvas.width = container.offsetWidth;
+                    canvas.height = container.offsetHeight;
+                    drawChart();
+                }
+            };
+            
+            // Wait for DOM to be ready, then size canvas
+            requestAnimationFrame(() => {
+                resizeCanvas();
+                // Also resize after a delay to ensure layout is complete
+                setTimeout(resizeCanvas, 500);
+            });
+            
+            window.addEventListener('resize', resizeCanvas);
+        }
+
+        // Draw cyberpunk chart
+        function drawChart() {
+            const ctx = state.chartContext;
+            if (!ctx || !state.priceHistory.length) return;
+            
+            const canvas = ctx.canvas;
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = isMobile 
+                ? { top: 40, right: 80, bottom: 50, left: 50 }
+                : { top: 50, right: 120, bottom: 60, left: 70 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw grid with cyberpunk glow
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.1)';
+            ctx.lineWidth = 1;
+            
+            // Horizontal grid lines with glow
+            for (let i = 0; i <= chartConfig.gridLines; i++) {
+                const y = padding.top + (chartHeight / chartConfig.gridLines) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                // Add subtle glow on main grid lines
+                if (i === 0 || i === chartConfig.gridLines) {
+                    ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+                    ctx.lineWidth = 1.5;
+                } else {
+                    ctx.strokeStyle = 'rgba(0, 255, 136, 0.1)';
+                    ctx.lineWidth = 1;
+                }
+                ctx.stroke();
+            }
+            
+            // Vertical grid lines (time)
+            const timeSteps = 8;
+            for (let i = 0; i <= timeSteps; i++) {
+                const x = padding.left + (chartWidth / timeSteps) * i;
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, height - padding.bottom);
+                ctx.stroke();
+            }
+            
+            // Get price range
+            let minPrice = Infinity;
+            let maxPrice = -Infinity;
+            
+            state.priceHistory.forEach(point => {
+                Object.values(point.regions).forEach(region => {
+                    if (region.price > 0) {
+                        minPrice = Math.min(minPrice, region.price);
+                        maxPrice = Math.max(maxPrice, region.price);
+                    }
+                });
+            });
+            
+            // Add padding to price range
+            const priceRange = maxPrice - minPrice;
+            minPrice -= priceRange * 0.1;
+            maxPrice += priceRange * 0.1;
+            
+            // Draw price labels
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = isMobile ? '11px Inter' : '12px Inter';
+            ctx.textAlign = 'right';
+            ctx.fontWeight = '500';
+            
+            for (let i = 0; i <= chartConfig.gridLines; i++) {
+                const y = padding.top + (chartHeight / chartConfig.gridLines) * i;
+                const price = maxPrice - (maxPrice - minPrice) * (i / chartConfig.gridLines);
+                ctx.fillText(`$${Math.round(price)}`, padding.left - 10, y + 3);
+            }
+            
+            // Draw lines for each region
+            Object.entries(chartConfig.colors).forEach(([region, color]) => {
+                const points = state.priceHistory
+                    .map((point, index) => {
+                        if (!point.regions[region]) return null;
+                        const x = padding.left + (chartWidth / (chartConfig.maxPoints - 1)) * index;
+                        const y = padding.top + chartHeight - 
+                            ((point.regions[region].price - minPrice) / (maxPrice - minPrice)) * chartHeight;
+                        return { x, y, price: point.regions[region].price };
+                    })
+                    .filter(p => p !== null);
+                
+                if (points.length < 2) return;
+                
+                // Draw glow effect
+                ctx.strokeStyle = color;
+                ctx.lineWidth = isMobile ? 4 : 3;
+                ctx.globalAlpha = 0.4;
+                ctx.shadowColor = color;
+                ctx.shadowBlur = 15;
+                
+                ctx.beginPath();
+                points.forEach((point, i) => {
+                    if (i === 0) ctx.moveTo(point.x, point.y);
+                    else ctx.lineTo(point.x, point.y);
+                });
+                ctx.stroke();
+                
+                // Draw main line
+                ctx.lineWidth = isMobile ? 2.5 : 2;
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                
+                ctx.beginPath();
+                points.forEach((point, i) => {
+                    if (i === 0) ctx.moveTo(point.x, point.y);
+                    else ctx.lineTo(point.x, point.y);
+                });
+                ctx.stroke();
+                
+                // Draw points (larger on mobile)
+                ctx.fillStyle = color;
+                const pointRadius = isMobile ? 4 : 3;
+                points.forEach(point => {
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, pointRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            });
+            
+            // Draw time labels - use actual data timestamps if available
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = isMobile ? '10px Inter' : '11px Inter';
+            ctx.textAlign = 'center';
+            
+            if (state.priceHistory.length > 0) {
+                // Use actual timestamps from the data
+                const dataPoints = Math.min(timeSteps + 1, state.priceHistory.length);
+                const skipInterval = Math.max(1, Math.floor(state.priceHistory.length / timeSteps));
+                
+                for (let i = 0; i <= timeSteps; i++) {
+                    const x = padding.left + (chartWidth / timeSteps) * i;
+                    const dataIndex = Math.min(
+                        Math.floor(i * skipInterval),
+                        state.priceHistory.length - 1
+                    );
+                    
+                    if (state.priceHistory[dataIndex]) {
+                        const timestamp = state.priceHistory[dataIndex].timestamp;
+                        const time = new Date(timestamp);
+                        // Format time in local timezone (will use user's browser timezone)
+                        const timeStr = time.toLocaleTimeString('en-AU', { 
+                            hour: '2-digit', 
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                        ctx.fillText(timeStr, x, height - padding.bottom + 25);
+                    }
+                }
+            } else {
+                // Fallback if no data
+                ctx.fillText('No data', width / 2, height - padding.bottom + 25);
+            }
+        }
+
+        // Update price history
+        function updatePriceHistory(data) {
+            if (!data || !data.regions) return;
+            
+            // Use the settlement time from the data if available, otherwise use current time
+            const timestamp = data.settlementTime 
+                ? new Date(data.settlementTime.replace(/\//g, '-')).toISOString()
+                : new Date().toISOString();
+            const newPoint = {
+                timestamp,
+                regions: {}
+            };
+            
+            Object.entries(data.regions).forEach(([region, regionData]) => {
+                if (regionData.energyPrice !== undefined) {
+                    newPoint.regions[region] = {
+                        price: regionData.energyPrice,
+                        time: data.settlementTime
+                    };
+                }
+            });
+            
+            state.priceHistory.push(newPoint);
+            
+            // Keep only last 8 hours
+            if (state.priceHistory.length > chartConfig.maxPoints) {
+                state.priceHistory = state.priceHistory.slice(-chartConfig.maxPoints);
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('priceHistory', JSON.stringify(state.priceHistory));
+            
+            // Redraw chart
+            if (state.chartContext) {
+                drawChart();
+            }
+        }
+
+        // Initialize
+        function initialize() {
+            console.log('Initializing dashboard...');
+            initializeMap();
+            initializePeriodTabs();
+            initializeMobileSidebar();
+            initializeChart();
+            fetchData();
+            updateTime();
+            
+            // Set intervals
+            setInterval(updateTime, 1000);
+            state.updateTimer = setInterval(fetchData, UPDATE_INTERVAL);
+            
+            // Handle visibility
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+        }
+
+        // Start when ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initialize);
+        } else {
+            initialize();
+        }
+    </script>
+</body>
+</html>
