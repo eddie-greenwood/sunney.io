@@ -236,19 +236,23 @@ async function generateJWT(userId: string, email: string, secret: string): Promi
     iat: Math.floor(Date.now() / 1000)
   };
   
-  const encodedHeader = btoa(JSON.stringify(header))
+  // Use TextEncoder to handle UTF-8 properly
+  const encoder = new TextEncoder();
+  const headerBytes = encoder.encode(JSON.stringify(header));
+  const payloadBytes = encoder.encode(JSON.stringify(payload));
+  
+  // Convert to base64url
+  const encodedHeader = btoa(String.fromCharCode(...headerBytes))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
     
-  const encodedPayload = btoa(JSON.stringify(payload))
+  const encodedPayload = btoa(String.fromCharCode(...payloadBytes))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=/g, '');
   
   const data = `${encodedHeader}.${encodedPayload}`;
-  
-  const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     'raw',
     encoder.encode(secret),

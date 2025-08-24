@@ -28,3 +28,7 @@ script_name = "sunney-api"
 # Cron trigger - runs every 5 minutes
 [triggers]
 crons = ["*/5 * * * *"]
+
+# wrangler.toml (wrangler v3.88.0^)
+[observability.logs]
+enabled = true

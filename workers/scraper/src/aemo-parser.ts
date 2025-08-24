@@ -1,49 +1,85 @@
 // AEMO Data Parser - Handles ZIP files and CSV extraction
 // This replaces the mock data generation with real parsing
 
-import { parse } from 'csv-parse/sync';
+import { unzipSync } from 'fflate';
+import { TimeUtil } from '../../../shared/utils/time';
+
+interface DispatchRecord {
+  region: string;
+  price: number;
+  demand: number;
+  generation: number;
+  settlementDate: string;
+}
+
+interface ScadaRecord {
+  duid: string;
+  scadaValue: number;
+  settlementDate: string;
+}
 
 /**
  * Parse AEMO dispatch ZIP file containing price and demand data
  * AEMO files have a specific CSV format with multiple record types
  */
-export async function parseDispatchData(arrayBuffer: ArrayBuffer): Promise<any[]> {
+export async function parseDispatchData(arrayBuffer: ArrayBuffer): Promise<DispatchRecord[]> {
   try {
-    // Note: In Cloudflare Workers, we need to use a lightweight unzip
-    // For now, using a simple implementation that works with CF Workers
+    console.log('parseDispatchData: ArrayBuffer size:', arrayBuffer.byteLength);
     const csvContent = await extractCSVFromZip(arrayBuffer, 'DISPATCHIS');
     
     if (!csvContent) {
       throw new Error('No DISPATCHIS CSV found in ZIP');
     }
     
-    // Parse CSV with AEMO's format (skip first row which is metadata)
-    const lines = csvContent.split('\n');
-    const dataLines = lines.slice(1); // Skip header info
+    console.log('parseDispatchData: CSV content length:', csvContent.length);
     
-    const results = [];
+    // Parse CSV - AEMO format has multiple record types
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    const results: DispatchRecord[] = [];
     
-    for (const line of dataLines) {
-      // AEMO CSVs use comma separation
-      const fields = line.split(',');
+    for (const line of lines) {
+      // Skip comment lines
+      if (line.startsWith('C,') || line.startsWith('I,')) continue;
       
-      // Check if this is a PRICE record (D,DISPATCH,PRICE,...)
-      if (fields[0] === 'D' && fields[2] === 'PRICE') {
-        const settlementDate = fields[4]; // SETTLEMENTDATE
-        const regionId = fields[6];       // REGIONID
-        const rrp = parseFloat(fields[10]); // RRP (Regional Reference Price)
+      const fields = parseCSVLine(line);
+      
+      // DISPATCHPRICE records contain the actual price data
+      // Format: D,DISPATCH,PRICE,<version>,<SETTLEMENTDATE>,<RUNNO>,<REGIONID>,<interval>,<intervention>,<RRP>,...
+      if (fields[0] === 'D' && fields[1] === 'DISPATCH' && fields[2] === 'PRICE') {
+        const settlementDate = fields[4]; 
+        const regionId = fields[6];
+        const rrp = parseFloat(fields[9] || '0'); // RRP is at position 9 (0-indexed)
         
-        // Additional fields if available
-        const totalDemand = fields[11] ? parseFloat(fields[11]) : 0;
-        const availableGeneration = fields[17] ? parseFloat(fields[17]) : 0;
+        // Skip invalid data
+        if (!regionId || isNaN(rrp)) continue;
         
         results.push({
           region: regionId,
           price: rrp,
-          demand: totalDemand,
-          generation: availableGeneration,
-          settlementDate: formatAEMODate(settlementDate)
+          demand: 0, // Will be filled from REGIONSUM records
+          generation: 0,
+          settlementDate: TimeUtil.parseAEMOToUTC(settlementDate)
         });
+      }
+      
+      // DISPATCHREGIONSUM records contain demand data
+      // Format: D,DISPATCH,REGIONSUM,<version>,<SETTLEMENTDATE>,<RUNNO>,<REGIONID>,<interval>,<intervention>,<TOTALDEMAND>,<AVAILABLEGENERATION>,...
+      if (fields[0] === 'D' && fields[1] === 'DISPATCH' && fields[2] === 'REGIONSUM') {
+        const settlementDate = fields[4];
+        const regionId = fields[6];
+        const totalDemand = parseFloat(fields[9] || '0');  // Position 9 for total demand
+        const availableGeneration = parseFloat(fields[10] || '0'); // Position 10 for available generation
+        
+        // Update matching price record with demand data
+        const priceRecord = results.find(r => 
+          r.region === regionId && 
+          r.settlementDate === TimeUtil.parseAEMOToUTC(settlementDate)
+        );
+        
+        if (priceRecord) {
+          priceRecord.demand = totalDemand;
+          priceRecord.generation = availableGeneration;
+        }
       }
     }
     
@@ -54,10 +90,18 @@ export async function parseDispatchData(arrayBuffer: ArrayBuffer): Promise<any[]
   }
 }
 
+interface P5MinRecord {
+  region: string;
+  price: number;
+  demand: number;
+  interval: string;
+  type: string;
+}
+
 /**
  * Parse P5MIN predispatch data
  */
-export async function parseP5MinData(arrayBuffer: ArrayBuffer): Promise<any[]> {
+export async function parseP5MinData(arrayBuffer: ArrayBuffer): Promise<P5MinRecord[]> {
   try {
     const csvContent = await extractCSVFromZip(arrayBuffer, 'P5MIN');
     
@@ -65,26 +109,29 @@ export async function parseP5MinData(arrayBuffer: ArrayBuffer): Promise<any[]> {
       throw new Error('No P5MIN CSV found in ZIP');
     }
     
-    const lines = csvContent.split('\n');
-    const dataLines = lines.slice(1);
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    const results: P5MinRecord[] = [];
     
-    const results = [];
-    
-    for (const line of dataLines) {
-      const fields = line.split(',');
+    for (const line of lines) {
+      if (line.startsWith('C,') || line.startsWith('I,')) continue;
       
-      // P5MIN REGIONSOLUTION records
-      if (fields[0] === 'D' && fields[2] === 'REGIONSOLUTION') {
+      const fields = parseCSVLine(line);
+      
+      // P5MIN_REGIONSOLUTION records
+      // Format: D,P5MIN,REGIONSOLUTION,<version>,<INTERVAL>,<RUNNO>,<REGIONID>,...,<RRP>,...,<TOTALDEMAND>
+      if (fields[0] === 'D' && fields[1] === 'P5MIN' && fields[2] === 'REGIONSOLUTION') {
         const interval = fields[4];
         const regionId = fields[6];
-        const rrp = parseFloat(fields[10]);
-        const totalDemand = parseFloat(fields[14]);
+        const rrp = parseFloat(fields[9] || '0');
+        const totalDemand = parseFloat(fields[10] || '0');
+        
+        if (!regionId || isNaN(rrp)) continue;
         
         results.push({
           region: regionId,
           price: rrp,
           demand: totalDemand,
-          interval: formatAEMODate(interval),
+          interval: TimeUtil.parseAEMOToUTC(interval),
           type: 'P5MIN'
         });
       }
@@ -97,10 +144,43 @@ export async function parseP5MinData(arrayBuffer: ArrayBuffer): Promise<any[]> {
   }
 }
 
+interface FCASRecord {
+  region: string;
+  service: string;
+  price: number;
+  enablement_min: number;
+  enablement_max: number;
+  settlement_date: string;
+}
+
+interface InterconnectorRecord {
+  interconnector: string;
+  from_region: string;
+  to_region: string;
+  flow_mw: number;
+  losses_mw: number;
+  limit_mw: number;
+  settlement_date: string;
+}
+
+interface ConstraintRecord {
+  constraint_id: string;
+  rhs: number;
+  marginal_value: number;
+  violation_degree: number;
+  settlement_date: string;
+}
+
+interface GeneratorScadaRecord {
+  duid: string;
+  scada_mw: number;
+  settlement_date: string;
+}
+
 /**
  * Parse FCAS (Frequency Control Ancillary Services) data
  */
-export async function parseFCASData(arrayBuffer: ArrayBuffer): Promise<any[]> {
+export async function parseFCASData(arrayBuffer: ArrayBuffer): Promise<FCASRecord[]> {
   try {
     const csvContent = await extractCSVFromZip(arrayBuffer, 'FCAS');
     
@@ -120,36 +200,37 @@ export async function parseFCASData(arrayBuffer: ArrayBuffer): Promise<any[]> {
   }
 }
 
-function parseFCASContent(csvContent: string): any[] {
-  const lines = csvContent.split('\n');
-  const dataLines = lines.slice(1);
-  
-  const results = [];
+function parseFCASContent(csvContent: string): FCASRecord[] {
+  const lines = csvContent.split('\n').filter(line => line.trim());
+  const results: FCASRecord[] = [];
   const services = [
     'RAISE6SEC', 'RAISE60SEC', 'RAISE5MIN', 'RAISEREG',
     'LOWER6SEC', 'LOWER60SEC', 'LOWER5MIN', 'LOWERREG'
   ];
   
-  for (const line of dataLines) {
-    const fields = line.split(',');
+  for (const line of lines) {
+    if (line.startsWith('C,') || line.startsWith('I,')) continue;
     
-    // FCAS price records
+    const fields = parseCSVLine(line);
+    
+    // FCAS price records in DISPATCH files
+    // Format varies but typically: D,DISPATCH,FCAS_PRICE,...
     if (fields[0] === 'D' && fields[2] === 'FCAS_PRICE') {
       const settlementDate = fields[4];
       const regionId = fields[6];
-      const service = fields[8];
-      const price = parseFloat(fields[10]);
-      const enablementMin = parseFloat(fields[11] || '0');
-      const enablementMax = parseFloat(fields[12] || '0');
+      const service = fields[7];
+      const price = parseFloat(fields[8] || '0');
+      const enablementMin = parseFloat(fields[9] || '0');
+      const enablementMax = parseFloat(fields[10] || '0');
       
-      if (services.includes(service)) {
+      if (services.includes(service) && !isNaN(price)) {
         results.push({
           region: regionId,
           service: service,
           price: price,
           enablement_min: enablementMin,
           enablement_max: enablementMax,
-          settlement_date: formatAEMODate(settlementDate)
+          settlement_date: TimeUtil.parseAEMOToUTC(settlementDate)
         });
       }
     }
@@ -159,70 +240,163 @@ function parseFCASContent(csvContent: string): any[] {
 }
 
 /**
- * Extract CSV content from ZIP file
- * This is a simplified version for Cloudflare Workers
- * In production, use proper ZIP library
+ * Parse SCADA data for generator output
  */
-async function extractCSVFromZip(arrayBuffer: ArrayBuffer, filePattern: string): Promise<string | null> {
-  // Convert ArrayBuffer to Uint8Array
-  const bytes = new Uint8Array(arrayBuffer);
-  
-  // Simple ZIP structure parsing (works for single-file ZIPs)
-  // ZIP files have a specific structure with local file headers
-  
-  // Look for the file pattern in the ZIP
-  const decoder = new TextDecoder();
-  const fullContent = decoder.decode(bytes);
-  
-  // Find CSV content boundaries (simplified - assumes single CSV)
-  // In production, use proper ZIP library like JSZip
-  const csvStart = fullContent.indexOf('D,');
-  if (csvStart === -1) {
-    return null;
+export async function parseScadaData(arrayBuffer: ArrayBuffer): Promise<ScadaRecord[]> {
+  try {
+    console.log('parseScadaData: ArrayBuffer size:', arrayBuffer.byteLength);
+    const csvContent = await extractCSVFromZip(arrayBuffer, 'DISPATCHSCADA');
+    
+    if (!csvContent) {
+      throw new Error('No DISPATCHSCADA CSV found in ZIP');
+    }
+    
+    console.log('parseScadaData: CSV content length:', csvContent.length);
+    
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    const results: ScadaRecord[] = [];
+    
+    for (const line of lines) {
+      // Skip comment and header lines
+      if (line.startsWith('C,') || line.startsWith('I,')) continue;
+      
+      const fields = parseCSVLine(line);
+      
+      // UNIT_SCADA records: D,DISPATCH,UNIT_SCADA,1,settlementdate,DUID,SCADAVALUE
+      if (fields[0] === 'D' && fields[1] === 'DISPATCH' && fields[2] === 'UNIT_SCADA') {
+        const settlementDate = fields[4];
+        const duid = fields[5];
+        const scadaValue = parseFloat(fields[6] || '0');
+        
+        // Only include positive generation (negative = consumption)
+        if (duid && !isNaN(scadaValue)) {
+          results.push({
+            duid: duid,
+            scadaValue: scadaValue,
+            settlementDate: TimeUtil.parseAEMOToUTC(settlementDate)
+          });
+        }
+      }
+    }
+    
+    console.log(`parseScadaData: Parsed ${results.length} SCADA records`);
+    return results;
+  } catch (error) {
+    console.error('Error parsing SCADA data:', error);
+    throw error;
   }
-  
-  // Extract until the end of CSV data (before ZIP footer)
-  let csvEnd = fullContent.indexOf('PK', csvStart); // Next ZIP header
-  if (csvEnd === -1) {
-    csvEnd = fullContent.length;
-  }
-  
-  const csvContent = fullContent.substring(csvStart, csvEnd);
-  
-  // Clean up any binary artifacts
-  return csvContent.replace(/[^\x20-\x7E\n\r]/g, '');
 }
 
 /**
- * Format AEMO date string to ISO format
- * AEMO format: "YYYY/MM/DD HH:MM:SS"
- * Output: ISO 8601
+ * Parse battery dispatch data from DISPATCHLOAD
  */
-function formatAEMODate(aemoDate: string): string {
-  if (!aemoDate) return new Date().toISOString();
+export async function parseBatteryDispatchData(arrayBuffer: ArrayBuffer): Promise<any[]> {
+  try {
+    console.log('parseBatteryDispatchData: ArrayBuffer size:', arrayBuffer.byteLength);
+    const csvContent = await extractCSVFromZip(arrayBuffer, 'DISPATCHLOAD');
+    
+    if (!csvContent) {
+      throw new Error('No DISPATCHLOAD CSV found in ZIP');
+    }
+    
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    const results: any[] = [];
+    
+    for (const line of lines) {
+      if (line.startsWith('C,') || line.startsWith('I,')) continue;
+      
+      const fields = parseCSVLine(line);
+      
+      // DISPATCHLOAD records for batteries
+      // D,DISPATCH,LOAD,2,settlementdate,duid,tradetype,dispatchmode,agcstatus,initialmw,totalcleared,rampdownrate,rampuprate,...
+      if (fields[0] === 'D' && fields[1] === 'DISPATCH' && fields[2] === 'LOAD') {
+        const settlementDate = fields[4];
+        const duid = fields[5];
+        const totalCleared = parseFloat(fields[10] || '0');
+        
+        // Only include battery units (BES, BATT in name)
+        if (duid && (duid.includes('BES') || duid.includes('BATT') || duid.includes('BATTERY'))) {
+          results.push({
+            duid: duid,
+            totalcleared: totalCleared,
+            settlement_date: TimeUtil.parseAEMOToUTC(settlementDate),
+            // Additional fields can be added as needed
+            soc_percent: 0, // Would need separate data source
+            energy_mwh: 0   // Would need separate data source
+          });
+        }
+      }
+    }
+    
+    console.log(`parseBatteryDispatchData: Parsed ${results.length} battery records`);
+    return results;
+  } catch (error) {
+    console.error('Error parsing battery dispatch data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Extract CSV content from ZIP file using fflate
+ */
+async function extractCSVFromZip(arrayBuffer: ArrayBuffer, filePattern: string): Promise<string | null> {
+  try {
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const unzipped = unzipSync(uint8Array);
+    
+    // AEMO files are named like PUBLIC_DISPATCHIS_*.CSV
+    // We look for files containing DISPATCHIS regardless of prefix
+    for (const [filename, data] of Object.entries(unzipped)) {
+      const upperFilename = filename.toUpperCase();
+      const upperPattern = filePattern.toUpperCase();
+      
+      // Check if this is the right type of file
+      if (upperFilename.includes(upperPattern) && upperFilename.endsWith('.CSV')) {
+        console.log(`Extracting CSV: ${filename} for pattern: ${filePattern}`);
+        const decoder = new TextDecoder('utf-8');
+        return decoder.decode(data);
+      }
+    }
+    
+    // If no match, just take the first CSV file (AEMO ZIPs usually have just one)
+    const csvFile = Object.keys(unzipped).find(f => f.toUpperCase().endsWith('.CSV'));
+    if (csvFile) {
+      console.log(`Using first CSV: ${csvFile} for pattern: ${filePattern}`);
+      const decoder = new TextDecoder('utf-8');
+      return decoder.decode(unzipped[csvFile]);
+    }
+    
+    console.log('Available files in ZIP:', Object.keys(unzipped));
+    return null;
+  } catch (error) {
+    console.error('Error extracting CSV from ZIP:', error);
+    return null;
+  }
+}
+
+/**
+ * Parse CSV line handling quoted fields
+ */
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
   
-  // Handle AEMO format: "2024/01/15 14:30:00"
-  const parts = aemoDate.trim().replace(/"/g, '').split(' ');
-  if (parts.length !== 2) return aemoDate;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
   
-  const [datePart, timePart] = parts;
-  const [year, month, day] = datePart.split('/');
-  const [hour, minute, second] = timePart.split(':');
-  
-  // Create date in AEST (UTC+10)
-  const date = new Date(
-    parseInt(year),
-    parseInt(month) - 1,
-    parseInt(day),
-    parseInt(hour),
-    parseInt(minute),
-    parseInt(second || '0')
-  );
-  
-  // Adjust for AEST to UTC (subtract 10 hours)
-  date.setHours(date.getHours() - 10);
-  
-  return date.toISOString();
+  result.push(current.trim());
+  return result;
 }
 
 /**
@@ -234,8 +408,8 @@ export async function fetchWithTruncationHandling(url: string, maxRetries = 3): 
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; AEMO-Scraper/1.0)',
-          'Accept': 'text/html,application/xhtml+xml'
+          'User-Agent': 'Mozilla/5.0 (compatible; Sunney-Scraper/1.0)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
         }
       });
       
@@ -294,9 +468,12 @@ export function extractZipLinksFromHTML(html: string): string[] {
   
   // Strategy 1: Standard href extraction
   const hrefRegex = /href=["']([^"']*\.zip)["']/gi;
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = hrefRegex.exec(html)) !== null) {
-    links.push(match[1]);
+    // Extract just the filename, not the full path
+    const fullPath = match[1];
+    const filename = fullPath.split('/').pop() || fullPath;
+    links.push(filename);
   }
   
   // Strategy 2: Look for AEMO filename patterns even without href
@@ -358,11 +535,11 @@ function extractTimestamp(filename: string): number {
   if (!match) return 0;
   
   const ts = match[1];
-  const year = parseInt(ts.substr(0, 4));
-  const month = parseInt(ts.substr(4, 2));
-  const day = parseInt(ts.substr(6, 2));
-  const hour = parseInt(ts.substr(8, 2));
-  const minute = parseInt(ts.substr(10, 2));
+  const year = parseInt(ts.substring(0, 4));
+  const month = parseInt(ts.substring(4, 6));
+  const day = parseInt(ts.substring(6, 8));
+  const hour = parseInt(ts.substring(8, 10));
+  const minute = parseInt(ts.substring(10, 12));
   
   return new Date(year, month - 1, day, hour, minute).getTime();
 }
